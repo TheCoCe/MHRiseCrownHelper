@@ -1,37 +1,38 @@
-local drawing = {};
-local singletons = require("MHR_CrownHelper.singletons");
-local time = require("MHR_CrownHelper.time");
+local Drawing = {};
+local Singletons = require("MHR_CrownHelper.Singletons")
+local Time = require("MHR_CrownHelper.Time");
+local Settings = require("MHR_CrownHelper.Settings");
 
 -- window size
-local get_main_view_method = sdk.find_type_definition("via.SceneManager"):get_method("get_MainView");
-local get_window_size_method = sdk.find_type_definition("via.SceneView"):get_method("get_WindowSize");
+local getMainViewMethod = sdk.find_type_definition("via.SceneManager"):get_method("get_MainView");
+local getWindowSizeMethod = sdk.find_type_definition("via.SceneView"):get_method("get_WindowSize");
 
-local imgui_font;
-local d2d_font;
+-- font resources
+local imguiFont;
+local d2dFont;
 
 -- image resources
-local image_resource_path = "MHR_CrownHelper/";
-local crown_images = {};
-local book_image;
+local imageResourcePath = "MHR_CrownHelper/";
+local crownImages = {};
+local bookImage;
 
+-------------------------------------------------------------------
 
-local active_anims = {};
-
-function drawing.Init()
+function Drawing.Init()
     if d2d ~= nil then
-        crown_images[1] = d2d.Image.new(image_resource_path .. "MiniCrown.png");
-        crown_images[2] = d2d.Image.new(image_resource_path .. "BigCrown.png");
-        crown_images[3] = d2d.Image.new(image_resource_path .. "KingCrown.png");
+        crownImages[1] = d2d.Image.new(imageResourcePath .. "MiniCrown.png");
+        crownImages[2] = d2d.Image.new(imageResourcePath .. "BigCrown.png");
+        crownImages[3] = d2d.Image.new(imageResourcePath .. "KingCrown.png");
 
-        book_image = d2d.Image.new(image_resource_path .. "Book.png");
+        bookImage = d2d.Image.new(imageResourcePath .. "Book.png");
 
-        d2d_font = d2d.Font.new("Consolas", 14, false);
+        d2dFont = d2d.Font.new("Consolas", Settings.current.text.textSize, false);
     end
 end
 
 -------------------------------------------------------------------
 
-function drawing.Update(deltaTime)
+function Drawing.Update(deltaTime)
     --    if d2d ~= nil then
     --        d2d.text(font, string.format("%.2f", deltaTime), 200, 200, 0xFF000000);
     --    end
@@ -48,7 +49,7 @@ end
 
 -------------------------------------------------------------------
 
-function drawing.draw_rect(posx, posy, sizex, sizey, color)
+function Drawing.DrawRect(posx, posy, sizex, sizey, color)
     if d2d ~= nil then
         d2d.fill_rect(posx, posy, sizex, sizey, color);
     else
@@ -58,142 +59,89 @@ end
 
 -------------------------------------------------------------------
 
-function drawing.argb_color_to_abgr_color(argb_color)
-	local alpha = (argb_color >> 24) & 0xFF;
-	local red = (argb_color >> 16) & 0xFF;
-	local green = (argb_color >> 8) & 0xFF;
-	local blue = argb_color & 0xFF;
-
-	local abgr_color = 0x1000000 * alpha + 0x10000 * blue + 0x100 * green + red;
-
-	return abgr_color;
-end
-
--------------------------------------------------------------------
-
-function drawing.color_to_argb(color)
-	local alpha = (color >> 24) & 0xFF;
-	local red = (color >> 16) & 0xFF;
-	local green = (color >> 8) & 0xFF;
-	local blue = color & 0xFF;
-
-	return alpha, red, green, blue;
-end
-
--------------------------------------------------------------------
-
-function drawing.argb_to_color(alpha, red, green, blue)
-    return 0x1000000 * alpha + 0x10000 * red + 0x100 * green + blue;
-end
-
--------------------------------------------------------------------
-
-function drawing.scale_color_opacity(color, scale)
-	local  alpha, red, green, blue = drawing.color_to_argb(color);
-	local new_alpha = math.floor(alpha * scale);
-	if new_alpha < 0 then new_alpha = 0; end
-	if new_alpha > 255 then new_alpha = 255; end
-
-	return drawing.argb_to_color(new_alpha, red, green, blue);
-end
-
--------------------------------------------------------------------
-
-function drawing.draw_text(text, posx, posy, color, drawShadow, shadowOffsetX, shadowOffsetY, shadowColor)
+function Drawing.DrawText(text, posx, posy, color, drawShadow, shadowOffsetX, shadowOffsetY, shadowColor)
     if text == nil then
         return;
     end
 
     if drawShadow then
         if d2d ~= nil then
-            d2d.text(d2d_font, text, posx + shadowOffsetX, posy + shadowOffsetY, shadowColor);
+            d2d.text(d2dFont, text, posx + shadowOffsetX, posy + shadowOffsetY, shadowColor);
         else
-            draw.text(text, posx + shadowOffsetX, posy + shadowOffsetY, drawing.argb_color_to_abgr_color(shadowColor));
+            draw.text(text, posx + shadowOffsetX, posy + shadowOffsetY, Drawing.ARGBtoABGR(shadowColor));
         end
     end
 
     if d2d ~= nil then
-        d2d.text(d2d_font, text, posx, posy, color);
+        d2d.text(d2dFont, text, posx, posy, color);
     else
-        draw.text(text, posx, posy, drawing.argb_color_to_abgr_color(color));
+        draw.text(text, posx, posy, Drawing.ARGBtoABGR(color));
     end
 end
 
 -------------------------------------------------------------------
 
-function drawing.draw_Crown(crown, posx, posy, sizex, sizey)
-    if d2d ~= nil then
-        if crown_images[crown] ~= nil then
-            if sizex ~= nil and sizey ~= nil then
-                d2d.image(crown_images[crown], posx, posy, sizex, sizey);
-            else
-                d2d.image(crown_images[crown], posx, posy);
-            end
-        end
+function Drawing.DrawImage(image, posx, posy, sizex, sizey)
+    if d2d == nil or image == nil then 
+        return; 
     end
+
+    local imgWidth, imgHeight = image:size();
+    sizex = sizex or imgWidth;
+    sizey = sizey or imgHeight;
+
+    d2d.image(image, posx, posy, sizex, sizey);
 end
 
 -------------------------------------------------------------------
 
-function drawing.draw_Book(posx, posy, sizex, sizey)
-    if d2d ~= nil then
-        if book_image ~= nil then
-            if sizex ~= nil and sizey ~= nil then
-                d2d.image(book_image, posx, posy, sizex, sizey);
-            else
-                d2d.image(book_image, posx, posy);
-            end
-        end
-    end
-end
-
--------------------------------------------------------------------
-
--- Top right camera target monster widget values
--- 50 px @ 2560x1440
-local ct_padding_right = 0.01953125;
--- 35 px @ 2560x1440
-local ct_padding_top = 0.0243056;
--- 115 px @ 2560x1440
-local ct_item_width = 0.044921875;
--- 20 px @ 2560x1440
-local ct_item_padding = 0.0078125;
--- 15 px @ 2560x1440
-local ct_item_padding_bot = 0.0104167;
--- 42 px @ 2560x1440
-local ct_info_height = 0.029167;
+-- Top right camera target monster widget size values in percent derived from pixels in 2560x1440
+local ctPadRight = 0.01953125;      --  50
+local ctPadTop = 0.0243056;         --  35
+local ctItemWidth = 0.044921875;    -- 115
+local ctPadItem = 0.0078125;        --  20
+local ctPadItemBotom = 0.0104167;   --  15
+local ctInfoHeight = 0.029167;      --  42
 
 -- draws a crown ontop of a monster icon in the top right
-function drawing.DrawMonsterCrown(monster, index)
-    if monster.is_small or monster.is_big or monster.is_king then
-        local w, h = drawing.GetWindowSize();
+function Drawing.DrawMonsterCrown(monster, index)
+    if monster.isSmall or monster.isBig or monster.isKing then
+        local w, h = Drawing.GetWindowSize();
         
         -- crown size
-        local size = (ct_item_width * w) * 0.5;
+        local size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.crownIconSizeMultiplier;
         
         -- place crowns on icon
-        local posx = (ct_padding_right * w) + (index + 1) * (ct_item_width * w) + index * (ct_item_padding * w);
-        local posy = (ct_padding_top * h) + (ct_item_width * w) - (size * 1.1);
+        local posx = (ctPadRight * w) + (index + 1) * (ctItemWidth * w) + index * (ctPadItem * w);
+        local posy = (ctPadTop * h) + (ctItemWidth * w) - (size * 1.1);
         
         -- transform position
-        posx, posy = drawing.FromTopRight(posx, posy);
+        posx, posy = Drawing.FromTopRight(posx, posy);
+
+        posx = posx + Settings.current.crownIcons.crownIconOffset.x;
+        posy = posy + Settings.current.crownIcons.crownIconOffset.y;
         
         local id = 1;
-        if monster.is_king then
+        if monster.isKing then
             id = 3;
-        elseif monster.is_big then
+        elseif monster.isBig then
             id = 2;
         end
         
-        drawing.draw_Crown(id, posx, posy, size, size);
+        Drawing.DrawImage(crownImages[id], posx, posy, size, size);
         
         -- draw book icon
-        if monster.crown_needed then
-            posx = (ct_padding_right * w) + (index) * (ct_item_width * w) + index * (ct_item_padding * w) + (size * 1.1);
+        if monster.crownNeeded and Settings.current.crownIcons.showHunterRecordIcons then
+            size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.hunterRecordIconSizeMultiplier;
+            posx = (ctPadRight * w) + (index) * (ctItemWidth * w) + index * (ctPadItem * w) + (size * 1.1);
+            posy = (ctPadTop * h) + (ctItemWidth * w) - (size * 1.1);
             -- transform position
-            posx, posy = drawing.FromTopRight(posx, posy);
+            posx, posy = Drawing.FromTopRight(posx, posy);
 
-            drawing.draw_Book(posx, posy, size, size);
+            posx = posx + Settings.current.crownIcons.hunterRecordIconOffset.x;
+            posy = posy + Settings.current.crownIcons.hunterRecordIconOffset.y;
+
+            Drawing.DrawImage(bookImage, posx, posy, size, size);
         end
     end
 
@@ -201,130 +149,127 @@ end
 
 -------------------------------------------------------------------
 
-function drawing.GetCrownThresholdString(size, small_border, big_border, king_border, steps, draw_simple)
-	local crown_string = "";
+function Drawing.GetCrownThresholdString(size, smallBorder, bigBorder, kingBorder, steps)
+	local crownString = "";
 
-	if draw_simple then
-		crown_string = crown_string .. string.format("<=%.0f >=%.0f >=%.0f", 100 * small_border,
-			100 * big_border, 100 * king_border);
-	else
-		local normalized_size = (size - small_border) / (king_border - small_border);
-		normalized_size = math.min(math.max(normalized_size, 0.0), 1.0);
+    local normalizedSize = (size - smallBorder) / (kingBorder - smallBorder);
+    normalizedSize = math.min(math.max(normalizedSize, 0.0), 1.0);
 
-		local normalized_big_size = (big_border - small_border) / (king_border - small_border);
-		normalized_big_size = math.min(math.max(normalized_big_size, 0.0), 1.0);
+    local normalized_big_size = (bigBorder - smallBorder) / (kingBorder - smallBorder);
+    normalized_big_size = math.min(math.max(normalized_big_size, 0.0), 1.0);
 
-		local size_index = math.max(math.floor(normalized_size * steps), 1);
-		local big_index = math.max(math.floor(normalized_big_size * steps), 1);
+    local size_index = math.max(math.floor(normalizedSize * steps), 1);
+    local bigIndex = math.max(math.floor(normalized_big_size * steps), 1);
 
-		crown_string = crown_string .. string.format("%.0f ", small_border * 100);
+    crownString = crownString .. string.format("%.0f ", smallBorder * 100);
 
-        local width = 0;
-        local height = 0;
+    local sizeString = "   ";
 
-		for i = 1, steps do
-			if i == size_index then
-                width, height = d2d_font:measure(crown_string);
-				-- king crown
-                if normalized_size == 1.0 then
-					crown_string = crown_string .. "👑";
-					-- small crown
-				elseif normalized_size == 0.0 then
-					crown_string = crown_string .. "♔";
-					-- big crown
-				elseif normalized_size >= normalized_big_size then
-					crown_string = crown_string .. "♛";
-					-- no crown
-				else
-					crown_string = crown_string .. "⦿";
-				end
-			elseif i == big_index then
-				crown_string = crown_string .. "┼";
-			elseif i == 1 then
-				crown_string = crown_string .. "├";
-			elseif i == steps then
-				crown_string = crown_string .. "┤";
-			else
-				crown_string = crown_string .. "─";
-			end
-		end
+    -- todo: replace crowns with default font icons so it can be displayed using: draw.text()
 
-        local sizeString = string.format("%.0f", size * 100);
-        local curWidth = d2d_font:measure(sizeString);
-        local curHeight = 0;
-        
-        while curWidth < width do
-            sizeString = "  " .. sizeString;
-            curWidth, curHeight = d2d_font:measure(sizeString);
+    for i = 1, steps do
+        if i == size_index then
+            sizeString = sizeString .. string.format("%.0f", size * 100);
+            -- king crown
+            if normalizedSize == 1.0 then
+                crownString = crownString .. "G"; --"👑";
+                -- small crown
+            elseif normalizedSize == 0.0 then
+                crownString = crownString .. "M"; --"♔";
+                -- big crown
+            elseif normalizedSize >= normalized_big_size then
+                crownString = crownString .. "S"; --"♛";
+                -- no crown
+            else
+                crownString = crownString .. "⦿";
+            end
+        elseif i == bigIndex then
+            crownString = crownString .. "|"; -- "┼";
+        elseif i == 1 then
+            crownString = crownString .. "|"; --"├";
+        elseif i == steps then
+            crownString = crownString .. "|"; -- "┤";
+        else
+            crownString = crownString .. "-"; -- "─";
         end
 
-		crown_string = sizeString .. "\n" .. crown_string .. string.format(" %.0f", king_border * 100);
-	end
+        if i < size_index then
+            sizeString = sizeString .. " ";
+        end
+    end
 
-	return crown_string;
+    crownString = sizeString .. "\n" .. crownString .. string.format(" %.0f", kingBorder * 100);
+
+	return crownString;
 end
 
 -------------------------------------------------------------------
 
 local detailInfoSize = 70;
-local detailPositionOffset = Vector2f.new(0, 0);
 
-function drawing.DrawMonsterDetails(monster, index)
-    local header_string = monster.name .. ": ";
+function Drawing.DrawMonsterDetails(monster, index)
+    local headerString = monster.name .. ": ";
 
-    local crown_string = nil;
+    local crownString = nil;
 
-    if monster.is_small then
-        crown_string = "Mini";
-    elseif monster.is_king then
-        crown_string = "Gold";
-    elseif monster.is_big then
-        crown_string = "Silver";
+    if monster.isSmall then
+        crownString = "Mini";
+    elseif monster.isKing then
+        crownString = "Gold";
+    elseif monster.isBig then
+        crownString = "Silver";
     end
 
-    if crown_string ~= nil then
-        if monster.crown_needed then
-            header_string = header_string .. crown_string .. " 📙";
+    if crownString ~= nil then
+        if monster.crownNeeded and Settings.current.sizeDetails.showHunterRecordIcons then
+            headerString = headerString .. crownString .. " 📙";
         else
-            header_string = header_string .. "[" .. crown_string .. "]";
+            headerString = headerString .. crownString;
         end
     end
 
-    local w, h = drawing.GetWindowSize();
-    local posx = (ct_padding_right * w) + 3 * (ct_item_width * w) + 2 * (ct_item_padding * w);
-    local posy = (ct_padding_top * h) + (ct_item_width * w) + 2 * (ct_item_padding_bot * h) + (ct_info_height * h) + (detailInfoSize * index);
+    local w, h = Drawing.GetWindowSize();
+    local posx = (ctPadRight * w) + 3 * (ctItemWidth * w) + 2 * (ctPadItem * w);
+    local posy = (ctPadTop * h) + (ctItemWidth * w) + 2 * (ctPadItemBotom * h) + (ctInfoHeight * h) + (detailInfoSize * index);
 
-    posx, posy = drawing.FromTopRight(posx, posy);
-    posx, posy = drawing.Offset(posx, posy, detailPositionOffset);
+    posx, posy = Drawing.FromTopRight(posx, posy);
+    posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x;
+    posy = posy + Settings.current.sizeDetails.sizeDetailsOffset.y;
 
+    
     -- Draw the following:
-
+    
     -- Monster name
     --                    114
     -- 90 ├────────────┼──♛───┤ 123
+    
+    Drawing.DrawText(headerString, posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
 
-    drawing.draw_text(header_string, posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
     posy = posy + 20;
-    drawing.draw_text(drawing.GetCrownThresholdString(monster.size, monster.small_border, monster.big_border, monster.king_border, 20, false), posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
+    if Settings.current.sizeDetails.showSizeGraph then
+        Drawing.DrawText(Drawing.GetCrownThresholdString(monster.size, monster.smallBorder, monster.bigBorder, monster.kingBorder, 20), posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
+    else
+        Drawing.DrawText("Size: " .. string.format("%.0f", monster.size * 100), posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
+    end
 end
 
 -------------------------------------------------------------------
 
-function drawing.DrawMonsterDetails2(monster)
+function Drawing.DrawMonsterDetails2(monster)
     local header_string = monster.name;
 
     local crown_string = nil;
 
-    if monster.is_small then
+    if monster.isSmall then
         crown_string = "Mini";
-    elseif monster.is_king then
+    elseif monster.isKing then
         crown_string = "Gold";
-    elseif monster.is_big then
+    elseif monster.isBig then
         crown_string = "Silver";
     end
 
     if crown_string ~= nil then
-        if monster.crown_needed then
+        if monster.crownNeeded then
             header_string = header_string .. ": Crown chance [" .. crown_string .. "]";
         else
             header_string = header_string .. ": [" .. crown_string .. "]";
@@ -333,8 +278,8 @@ function drawing.DrawMonsterDetails2(monster)
 
     if imgui.collapsing_header(header_string) then
         imgui.text(string.format("Size: %.0f", monster.size * 100));
-        imgui.push_font(imgui_font);
-        imgui.text(drawing.GetCrownThresholdString(monster.size, monster.small_border, monster.big_border, monster.king_border, 20, false));
+        imgui.push_font(imguiFont);
+        imgui.text(Drawing.GetCrownThresholdString(monster.size, monster.small_border, monster.big_border, monster.king_border, 20, false));
         imgui.pop_font();
         if crown_string ~= nil then
             imgui.text("Crown: " .. crown_string);
@@ -352,11 +297,11 @@ local window_pos = Vector2f.new(20, 220);
 local window_pivot = Vector2f.new(1, 0);
 
 -- Creates the monster detail info window
-function drawing.BeginMonsterDetailWindow()
-    local w, h = drawing.GetWindowSize();
-    local pos = Vector2f.new(w - (ct_padding_right * w), window_pos.y);
+function Drawing.BeginMonsterDetailWindow()
+    local w, h = Drawing.GetWindowSize();
+    local pos = Vector2f.new(w - (ctPadRight * w), window_pos.y);
     imgui.set_next_window_pos(pos, 0, window_pivot);
-    local sizex = ((3 * ct_item_width) + (2 * ct_item_padding)) * w;
+    local sizex = ((3 * ctItemWidth) + (2 * ctPadItem)) * w;
     imgui.set_next_window_size({sizex, window_size.y}, 0);
 
     return imgui.begin_window("Monster Size Details", true, 1);
@@ -365,18 +310,18 @@ end
 -------------------------------------------------------------------
 
 -- Ends the montser detail info panel
-function drawing.EndMonsterDetailWindow()
+function Drawing.EndMonsterDetailWindow()
     imgui.end_window();
 end
 
 -------------------------------------------------------------------
 
 -- Gets the current window size
-function drawing.GetWindowSize()
-    local window_size = get_window_size_method(get_main_view_method(singletons.SceneManager));
+function Drawing.GetWindowSize()
+    local windowSize = getWindowSizeMethod(getMainViewMethod(Singletons.SceneManager));
 
-    local w = window_size:get_field("w");
-    local h = window_size:get_field("h");
+    local w = windowSize:get_field("w");
+    local h = windowSize:get_field("h");
 
     return w, h;
 end
@@ -384,86 +329,96 @@ end
 -------------------------------------------------------------------
 
 -- transforms screen coordinates from top right 0,0
-function drawing.FromTopRight(posx, posy)
-    local w, h = drawing.GetWindowSize();
+function Drawing.FromTopRight(posx, posy)
+    local w, h = Drawing.GetWindowSize();
     return w - posx, posy;
 end
 
 -------------------------------------------------------------------
 
 -- transforms screen coordinates from bottom right 0,0
-function drawing.FromBottomRight(posx, posy)
-    local w, h = drawing.GetWindowSize();
+function Drawing.FromBottomRight(posx, posy)
+    local w, h = Drawing.GetWindowSize();
     return w - posx, h - posy;
 end
 
 -------------------------------------------------------------------
 
 -- transforms screen coordinates from bottom left 0,0
-function drawing.FromBottomLeft(posx, posy)
-    local w, h = drawing.GetWindowSize();
+function Drawing.FromBottomLeft(posx, posy)
+    local w, h = Drawing.GetWindowSize();
     return posx, h - posy;
 end
 
 -------------------------------------------------------------------
 
--- takes x, y and Vector2f offset, returns x, y
-function drawing.Offset(posx, posy, offset)
-    return posx + offset.x, posy + offset.y;
+function Drawing.ARGBtoABGR(ARGBColor)
+	local a = (ARGBColor >> 24) & 0xFF;
+	local r = (ARGBColor >> 16) & 0xFF;
+	local g = (ARGBColor >> 8) & 0xFF;
+	local b = ARGBColor & 0xFF;
+
+	local ABGRColor = 0x1000000 * a + 0x10000 * b + 0x100 * g + r;
+
+	return ABGRColor;
 end
 
 -------------------------------------------------------------------
 
-function drawing.InitModule()
-    imgui_font = imgui.load_font("NotoSansKR-Bold.otf", imgui.get_default_font_size(), { 0x1, 0xFFFF, 0 });
+function Drawing.InitModule()
+    imguiFont = imgui.load_font("NotoSansKR-Bold.otf", Settings.current.text.textSize, { 0x1, 0xFFFF, 0 });
 end
 
--- TESTING --
+-------------------------------------------------------------------
 
--- todo: coroutines are not yet supported by REframework but should be part of the next release
-function drawing.animated_box()
-    local anim_time = 0;
-    -- todo: d2d checks
+return Drawing;
 
-    while anim_time < 5 do
-        anim_time = anim_time + time.time_delta;
-        log.debug(anim_time);
+--[[
+     local active_anims = {};
 
-        local time_norm = anim_time / 5;
-
-        local sizex = time_norm * 1000;
-        local sizey = 50;
-
-        drawing.draw_rect(500, 500, sizex, sizey, 0xFFFFFF00);
-
-        coroutine.yield();
+    -- todo: coroutines are not yet supported by REframework but should be part of the next release
+    function Drawing.AnimatedBox()
+        local anim_time = 0;
+        -- todo: d2d checks
+        
+        while anim_time < 5 do
+            anim_time = anim_time + Time.timeDelta;
+            log.debug(anim_time);
+            
+            local time_norm = anim_time / 5;
+            
+            local sizex = time_norm * 1000;
+            local sizey = 50;
+            
+            Drawing.DrawRect(500, 500, sizex, sizey, 0xFFFFFF00);
+            
+            coroutine.yield();
+        end
+        
+        anim_time = 0;
+        
+        while anim_time < 3 do
+            anim_time = anim_time + Time.timeDelta;
+            log.debug(anim_time);
+            
+            local time_norm = anim_time / 3;
+            
+            local sizex = 1000;
+            local sizey = 50 + time_norm * 200;
+            
+            Drawing.DrawRect(500, 500, sizex, sizey, 0xFFFFFF00);
+            
+            coroutine.yield();
+        end
     end
-
-    anim_time = 0;
-
-    while anim_time < 3 do
-        anim_time = anim_time + time.time_delta;
-        log.debug(anim_time);
-
-        local time_norm = anim_time / 3;
-
-        local sizex = 1000;
-        local sizey = 50 + time_norm * 200;
-
-        drawing.draw_rect(500, 500, sizex, sizey, 0xFFFFFF00);
-
-        coroutine.yield();
-    end
-end
-
-function drawing.StartAnim()
-    local co = coroutine.create(function ()
-        print(1);
-    end);
+    
+    function Drawing.StartAnim()
+        local co = coroutine.create(function ()
+            print(1);
+        end);
 
     coroutine.resume(co);
-
+    
     active_anims[#active_anims+1] = co;
 end
-
-return drawing;
+]]

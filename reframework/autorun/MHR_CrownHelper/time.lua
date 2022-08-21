@@ -1,15 +1,19 @@
-local time = {};
+local Time = {};
 
 local application = sdk.get_native_singleton("via.Application");
-local application_type_def = sdk.find_type_definition("via.Application");
-local get_frame_time_mil_method = application_type_def:get_method("get_FrameTimeMillisecond");
+local applicationTypeDef = sdk.find_type_definition("via.Application");
+local getFrameTimeMilliseconds = applicationTypeDef:get_method("get_FrameTimeMillisecond");
 
-time.time_total = 0;
-time.time_delta = 0;
+Time.timeTotal = 0;
+Time.timeDelta = 0;
 
-function time.tick()
-    time.time_delta = get_frame_time_mil_method:call(application) * 0.01;
-    time.time_total = os.clock();
+-------------------------------------------------------------------
+
+function Time.Tick()
+    Time.timeDelta = getFrameTimeMilliseconds:call(application) * 0.01;
+    Time.timeTotal = os.clock();
 end
 
-return time;
+-------------------------------------------------------------------
+
+return Time;

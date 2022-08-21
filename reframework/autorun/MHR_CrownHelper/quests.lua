@@ -1,48 +1,54 @@
-local quests = {};
-local singletons = require("MHR_CrownHelper.singletons");
-local monster_hook = require("MHR_CrownHelper.monster_hook");
+local Quests = {};
+local Singletons = require("MHR_CrownHelper.Singletons");
+local Monsters = require("MHR_CrownHelper.Monsters");
 
-quests.index = 0;
+Quests.index = 0;
 
-local quest_manager_type_def = sdk.find_type_definition("snow.QuestManager");
-local on_changed_game_status = quest_manager_type_def:get_method("onChangedGameStatus");
-local get_status_method = quest_manager_type_def:get_method("getStatus");
+local questManagerTypeDef = sdk.find_type_definition("snow.QuestManager");
+local onChangedGameStatus = questManagerTypeDef:get_method("onChangedGameStatus");
+local getStatusMethod = questManagerTypeDef:get_method("getStatus");
 
-function quests.update(args)
-    local new_quest_status = sdk.to_int64(args[3]);
-    if new_quest_status ~= nil then
-        if (quests.index < 2 and new_quest_status == 2) or new_quest_status < 2 then
+-------------------------------------------------------------------
+
+function Quests.Update(args)
+    local newQuestStatus = sdk.to_int64(args[3]);
+    if newQuestStatus ~= nil then
+        if (Quests.index < 2 and newQuestStatus == 2) or newQuestStatus < 2 then
             -- Quest begin
 
             -- clear monster list from last quest
-            monster_hook.InitList();
+            Monsters.InitList();
         end
 
-        quests.index = new_quest_status;
+        Quests.index = newQuestStatus;
     end
 end
 
-function quests.Init()
-    if singletons.QuestManager == nil then
+-------------------------------------------------------------------
+
+function Quests.Init()
+    if Singletons.QuestManager == nil then
         log.error("No quest manager");
         return;
     end
 
-    local new_quest_status = get_status_method:call(singletons.QuestManager);
-    if new_quest_status == nil then
+    local newQuestStatus = getStatusMethod:call(Singletons.QuestManager);
+    if newQuestStatus == nil then
         log.error("No Quest Status");
         return;
     end
 
-    quests.index = new_quest_status;
+    Quests.index = newQuestStatus;
 end
 
-function quests.InitModule()
-    quests.Init();
+-------------------------------------------------------------------
 
-    sdk.hook(on_changed_game_status, 
+function Quests.InitModule()
+    Quests.Init();
+
+    sdk.hook(onChangedGameStatus, 
         function(args) 
-            pcall(quests.update, args);
+            pcall(Quests.Update, args);
         end, 
         function(retval)
             return retval;
@@ -50,4 +56,6 @@ function quests.InitModule()
     );
 end
 
-return quests;
+-------------------------------------------------------------------
+
+return Quests;

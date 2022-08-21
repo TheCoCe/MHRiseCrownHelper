@@ -1,21 +1,25 @@
-local singletons = {};
+local Singletons = {};
 
-singletons.MessageManager = nil;
-singletons.HunterRecordManager = nil;
-singletons.QuestManager = nil;
-singletons.EnemyManager = nil;
-singletons.SceneManager = nil;
+Singletons.MessageManager = nil;
+Singletons.HunterRecordManager = nil;
+Singletons.QuestManager = nil;
+Singletons.EnemyManager = nil;
+Singletons.SceneManager = nil;
 
-function singletons.Init() 
-    singletons.MessageManager = singletons.InitSingleton("snow.gui.MessageManager");
-    singletons.HunterRecordManager = singletons.InitSingleton("snow.HunterRecordManager");
-    singletons.QuestManager = singletons.InitSingleton("snow.QuestManager");
-    singletons.EnemyManager = singletons.InitSingleton("snow.enemy.EnemyManager");
+-------------------------------------------------------------------
+
+function Singletons.Init() 
+    Singletons.MessageManager = Singletons.InitSingleton("snow.gui.MessageManager");
+    Singletons.HunterRecordManager = Singletons.InitSingleton("snow.HunterRecordManager");
+    Singletons.QuestManager = Singletons.InitSingleton("snow.QuestManager");
+    Singletons.EnemyManager = Singletons.InitSingleton("snow.enemy.EnemyManager");
     
-    singletons.SceneManager = singletons.InitSingletonNative("via.SceneManager");
+    Singletons.SceneManager = Singletons.InitSingletonNative("via.SceneManager");
 end
 
-function singletons.InitSingleton(name)
+-------------------------------------------------------------------
+
+function Singletons.InitSingleton(name)
     local singleton = nil;
 
     singleton = sdk.get_managed_singleton(name);
@@ -26,7 +30,9 @@ function singletons.InitSingleton(name)
     return singleton;
 end
 
-function singletons.InitSingletonNative(name)
+-------------------------------------------------------------------
+
+function Singletons.InitSingletonNative(name)
     local singleton = nil;
 
     singleton = sdk.get_native_singleton(name);
@@ -37,8 +43,12 @@ function singletons.InitSingletonNative(name)
     return singleton;
 end
 
-function singletons.InitModule() 
-    singletons.Init();
+-------------------------------------------------------------------
+
+function Singletons.InitModule() 
+    Singletons.Init();
 end
 
-return singletons;
+-------------------------------------------------------------------
+
+return Singletons;
