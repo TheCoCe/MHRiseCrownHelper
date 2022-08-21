@@ -1,5 +1,6 @@
 local quests = {};
-local singletons;
+local singletons = require("MHR_CrownHelper.singletons");
+local monster_hook = require("MHR_CrownHelper.monster_hook");
 
 quests.index = 0;
 
@@ -12,6 +13,9 @@ function quests.update(args)
     if new_quest_status ~= nil then
         if (quests.index < 2 and new_quest_status == 2) or new_quest_status < 2 then
             -- Quest begin
+
+            -- clear monster list from last quest
+            monster_hook.InitList();
         end
 
         quests.index = new_quest_status;
@@ -34,8 +38,6 @@ function quests.Init()
 end
 
 function quests.InitModule()
-    singletons = require("MHR_CrownHelper.singletons");
-
     quests.Init();
 
     sdk.hook(on_changed_game_status, 

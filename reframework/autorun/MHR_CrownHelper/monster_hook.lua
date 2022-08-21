@@ -1,5 +1,5 @@
 local monster_hook = {};
-local singletons;
+local singletons = require("MHR_CrownHelper.singletons");
 
 local enemy_character_base_type_def = sdk.find_type_definition("snow.enemy.EnemyCharacterBase");
 local enemy_character_base_update_method = enemy_character_base_type_def:get_method("update");
@@ -21,13 +21,26 @@ local size_info_type = find_enemy_size_info_method:get_return_type();
 local get_small_border_method = size_info_type:get_method("get_SmallBorder");
 local get_big_border_method = size_info_type:get_method("get_BigBorder");
 local get_king_border_method = size_info_type:get_method("get_KingBorder");
+-- id
+local get_set_info_method = enemy_character_base_type_def:get_method("get_SetInfo");
+local set_info_type = get_set_info_method:get_return_type();
+local get_unique_id_method = set_info_type:get_method("get_UniqueId");
+-- hunter record
+local record_manager_type_def = sdk.find_type_definition("snow.HunterRecordManager");
+local record_mini_method = record_manager_type_def:get_method("isSmallCrown");
+local record_big_method = record_manager_type_def:get_method("isBigCrown");
+local record_king_method = record_manager_type_def:get_method("isKingCrown");
 
+-- key: enemy, value: bool monster recorded
 local recorded_monsters =  {};
+-- key: enemy, value: bool is big monster
 local known_big_monsters = {};
+-- registered monsters key: enemy, value: monster
+local monsters = {};
 
--- queue of monsters to work trough
-local monster_buffer = {};
+-------------------------------------------------------------------
 
+-- monster update hook
 function monster_hook.update_monster(enemy)
     if enemy == nil then
         return;
@@ -47,23 +60,34 @@ function monster_hook.update_monster(enemy)
         end
 
         if is_large then
-            log.debug("Large");
             monster_hook.NewMonster(enemy);
         end
     end
-
-
-
 end
 
+-------------------------------------------------------------------
+
+-- register a new large monster
 function monster_hook.NewMonster(enemy)
+    
+    -- create a new monster
     local monster = {};
+    
+    -- id
+    local set_info = get_set_info_method:call(enemy);
+	if set_info ~= nil then
+		local unique_id = get_unique_id_method:call(set_info);
+        if unique_id ~= nil then
+            monster.unique_id = unique_id;
+        end
+	end
+    
     -- type
     local enemy_type = enemy_type_field:get_data(enemy);
     if enemy_type ~= nil then
         monster.id = enemy_type;
     else
-        log.error("Invalid enemy type");
+        log.error("MHR_CrownHelper: Invalid enemy type");
     end
 
     -- name
@@ -71,8 +95,6 @@ function monster_hook.NewMonster(enemy)
     if enemy_name ~= nil then
         monster.name = enemy_name;
     end
-
-    log.debug(enemy_name);
 
     -- size
     local size_info = find_enemy_size_info_method:call(singletons.EnemyManager, enemy_type);
@@ -87,6 +109,7 @@ function monster_hook.NewMonster(enemy)
         if size ~= nil then
             monster.size = size;
 
+            -- get size borders
             if small_border ~= nil then
                 monster.small_border = small_border;
                 monster.is_small = monster.size <= monster.small_border;
@@ -101,31 +124,86 @@ function monster_hook.NewMonster(enemy)
                 monster.king_border = king_border;
                 monster.is_king = monster.size >= monster.king_border;
             end
+
+            -- check crowns
+            monster.crown_needed = false;
+
+            if monster.is_small and not record_mini_method(singletons.HunterRecordManager, monster.id) then
+                monster.crown_needed = true;
+            end
+            -- prioritize king crowns
+            if monster.is_king and not record_king_method(singletons.HunterRecordManager, monster.id) then
+                monster.crown_needed = true;
+            elseif monster.is_big and not record_big_method(singletons.HunterRecordManager, monster.id) then
+                monster.crown_needed = true;
+            end
         end
     end
 
-    monster_buffer[#monster_buffer+1] = monster;
-end
+    log.debug("MHR_CrownHelper: registered '" .. enemy_name .. "' size '" .. monster.size .. "'");
 
-local function Copy(t)
-    local u = { }
-    for k, v in pairs(t) do u[k] = v end
-    return u;
-end
+    if monsters[enemy] == nil then
+        monsters[enemy] = monster;
+    end
 
-function monster_hook.Pop()
-    local monster = Copy(monster_buffer[#monster_buffer]);
-    monster_buffer[#monster_buffer] = nil;
     return monster;
 end
 
-function monster_hook.BufferCount()
-    return #monster_buffer;
+-------------------------------------------------------------------
+
+-- get a monster from the enemy
+function monster_hook.GetMonster(enemy)
+    local monster = monsters[enemy];
+    if monster == nil then
+       monster = monster_hook.NewMonster(enemy);
+    end
+    return monster;
 end
 
-function monster_hook.InitModule()
-    singletons = require("MHR_CrownHelper.singletons");
+-------------------------------------------------------------------
 
+-- current enemies sdk methods
+local get_boss_enemy_count_method = enemy_manager_type_def:get_method("getBossEnemyCount");
+local get_boss_enemy_method = enemy_manager_type_def:get_method("getBossEnemy");
+
+function monster_hook.InterateMonsters(f)
+    -- get current boss enemy count on the map
+    local enemyCount = get_boss_enemy_count_method:call(singletons.EnemyManager);
+    if enemyCount == nil then
+        return;
+    end
+
+    -- iterate over all enemies
+    for i = 0, enemyCount - 1, 1 do
+        -- get the enemy
+        local enemy = get_boss_enemy_method:call(singletons.EnemyManager, i);
+        if enemy == nil then
+            goto continue;
+        end
+        -- get the monster from the enemy
+        local monster = monster_hook.GetMonster(enemy);
+
+        if monster ~= nil then
+            -- call delegate with the monster and it's corresponding index
+            f(monster, i);
+        end
+
+        ::continue::
+    end
+end
+
+-------------------------------------------------------------------
+
+-- initializes/empties the monster list
+function monster_hook.InitList()
+    monsters = {};
+end
+
+-------------------------------------------------------------------
+
+-- initializes the module
+function monster_hook.InitModule()
+    -- hook into the enemy update method
     sdk.hook(enemy_character_base_update_method, 
         function(args)
             pcall(monster_hook.update_monster, sdk.to_managed_object(args[2]));
