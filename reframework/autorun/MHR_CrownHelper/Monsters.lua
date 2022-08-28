@@ -1,5 +1,10 @@
 local Monsters = {};
 local Singletons = require("MHR_CrownHelper.Singletons");
+local Quests = require("MHR_CrownHelper.Quests");
+local Utils      = require("MHR_CrownHelper.Utils");
+
+---@class EmType
+---@class Enemy
 
 local enemyCharacterBaseTypeDef = sdk.find_type_definition("snow.enemy.EnemyCharacterBase");
 local enemyCharacterBaseUpdateMethod = enemyCharacterBaseTypeDef:get_method("update");
@@ -10,12 +15,13 @@ local enemyTypeField = enemyCharacterBaseTypeDef:get_field("<EnemyType>k__Backin
 
 -- enemy name
 local messageManagerTypeDef = sdk.find_type_definition("snow.gui.MessageManager");
-local getEnemyNameMessageMethod = messageManagerTypeDef:get_method("getEnemyNameMessage");
+local getEnemyNameMessageMethod = messageManagerTypeDef:get_method("getEnemyNameMessage(snow.enemy.EnemyDef.EmTypes)");
 -- monster size methods
 local getMonsterListRegisterScaleMethod = enemyCharacterBaseTypeDef:get_method("get_MonsterListRegisterScale");
 -- monster size definitions
 local enemyManagerTypeDef = sdk.find_type_definition("snow.enemy.EnemyManager");
-local findEnemeySizeInfoMethod = enemyManagerTypeDef:get_method("findEnemySizeInfo");
+local findEnemeySizeInfoMethod = enemyManagerTypeDef:get_method("findEnemySizeInfo(snow.enemy.EnemyDef.EmTypes)");
+local convertEnemyTypeIndexMethod = enemyManagerTypeDef:get_method("convertEnemyTypeIndex(snow.enemy.EnemyDef.EmTypes)");
 -- monster crown borders
 local sizeInfoReturnType = findEnemeySizeInfoMethod:get_return_type();
 local getSmallBorderMethod = sizeInfoReturnType:get_method("get_SmallBorder");
@@ -25,22 +31,47 @@ local getKingBorderMethod = sizeInfoReturnType:get_method("get_KingBorder");
 local getSetInfoMethod = enemyCharacterBaseTypeDef:get_method("get_SetInfo");
 local setInfoReturnType = getSetInfoMethod:get_return_type();
 local getUniqueIdMethod = setInfoReturnType:get_method("get_UniqueId");
--- hunter record
+-- HunterRecordManager -> get size infos (in quest and village)
 local recordManagerTypeDef = sdk.find_type_definition("snow.HunterRecordManager");
-local recordIsSmallCrownMethod = recordManagerTypeDef:get_method("isSmallCrown");
-local recordIsBigCrownMethod = recordManagerTypeDef:get_method("isBigCrown");
-local recordIsKingCrownMethod = recordManagerTypeDef:get_method("isKingCrown");
+local recordIsSmallCrownMethod = recordManagerTypeDef:get_method("isSmallCrown(snow.enemy.EnemyDef.EmTypes, snow.enemy.EnemyDef.EnemyTypeIndex, System.Single)");
+local recordIsBigCrownMethod = recordManagerTypeDef:get_method("isBigCrown(snow.enemy.EnemyDef.EmTypes, snow.enemy.EnemyDef.EnemyTypeIndex, System.Single)");
+local recordIsKingCrownMethod = recordManagerTypeDef:get_method("isKingCrown(snow.enemy.EnemyDef.EmTypes, snow.enemy.EnemyDef.EnemyTypeIndex, System.Single)");
+
+local recordIsEnemySmallCrownMethod = recordManagerTypeDef:get_method("isEnemySmallCrown(snow.enemy.EnemyDef.EnemyTypeIndex)");
+local recordIsEnemyBigCrownMethod = recordManagerTypeDef:get_method("isEnemyBigCrown(snow.enemy.EnemyDef.EnemyTypeIndex)");
+local recordIsEnemyKingCrownMethod = recordManagerTypeDef:get_method("isEnemyKingCrown(snow.enemy.EnemyDef.EnemyTypeIndex)");
+local recordIsCrownEnableMethod = recordManagerTypeDef:get_method("isCrownEnable(snow.enemy.EnemyDef.EnemyTypeIndex)");
+-- guild card
+
 
 -- key: enemy, value: bool monster recorded
-local recordedMonsters =  {};
+local recordedMonsters = {};
 -- key: enemy, value: bool is big monster
 local knownBigMonsters = {};
--- registered monsters key: enemy, value: monster
+-- Registered monsters k[enemy], v[monster] 
 Monsters.monsters = {};
+-- All available monster types k[emType], v[table]
+Monsters.monsterDefinitions = {};
 
 -------------------------------------------------------------------
 
--- monster update hook
+function Monsters.OnGameStatusChangedCallback()
+    if Quests.gameStatus == 1 then
+        -- Update the size infos when coming back to village
+        Monsters.InitSizeInfos();
+    end
+    
+    -- player on quest
+    if Quests.gameStatus == 2 then
+        -- Clear the outdated monster list when on a new quest
+        Monsters.InitList();
+    end
+end
+
+-------------------------------------------------------------------
+
+--- Monster hook function.
+---@param enemy Enemy The enemy provided by the hook
 function Monsters.UpdateMonster(enemy)
     if enemy == nil then
         return;
@@ -51,7 +82,7 @@ function Monsters.UpdateMonster(enemy)
         recordedMonsters[enemy] = true;
 
         if not knownBigMonsters[enemy] then
-            knownBigMonsters[enemy] = isBossEnemyMethod:call(enemy);
+            knownBigMonsters[enemy] = isBossEnemyMethod(enemy);
         end
 
         local is_large = knownBigMonsters[enemy];
@@ -67,80 +98,55 @@ end
 
 -------------------------------------------------------------------
 
--- register a new large monster
+---Registers and caches a new monster from the provided enemy
+---@param enemy Enemy
+---@return table monster The newly created monster table.
 function Monsters.NewMonster(enemy)
-    
+
     -- create a new monster
     local monster = {};
-    
+
     -- id
-    local setInfo = getSetInfoMethod:call(enemy);
-	if setInfo ~= nil then
-		local uniqueId = getUniqueIdMethod:call(setInfo);
+    local setInfo = getSetInfoMethod(enemy);
+    if setInfo ~= nil then
+        local uniqueId = getUniqueIdMethod(setInfo);
         if uniqueId ~= nil then
             monster.uniqueId = uniqueId;
         end
-	end
-    
+    end
+
     -- type
-    local enemyType = enemyTypeField:get_data(enemy);
-    if enemyType ~= nil then
-        monster.id = enemyType;
+    local emType = enemyTypeField:get_data(enemy);
+    if emType ~= nil then
+        monster.emType = emType;
     else
-        log.error("MHR_CrownHelper: Invalid enemy type");
+        Utils.logError("Invalid enemy type");
     end
 
     -- name
-    local enemyName = getEnemyNameMessageMethod:call(Singletons.MessageManager, enemyType);
+    local enemyName = getEnemyNameMessageMethod(Singletons.MessageManager, emType);
     if enemyName ~= nil then
         monster.name = enemyName;
     end
 
     -- size
-    local sizeInfo = findEnemeySizeInfoMethod:call(Singletons.EnemyManager, enemyType);
+    local sizeInfo = Monsters.GetSizeInfoForEnemyType(emType, false);
 
     if sizeInfo ~= nil then
-        local smallBorder = getSmallBorderMethod:call(sizeInfo);
-        local bigBorder = getBigBorderMethod:call(sizeInfo);
-        local kingBorder = getKingBorderMethod:call(sizeInfo);
-
-        local size = getMonsterListRegisterScaleMethod:call(enemy);
+        local size = getMonsterListRegisterScaleMethod(enemy);
 
         if size ~= nil then
             monster.size = size;
 
-            -- get size borders
-            if smallBorder ~= nil then
-                monster.smallBorder = smallBorder;
-                monster.isSmall = monster.size <= monster.smallBorder;
-            end
+            local enemyTypeIndex = convertEnemyTypeIndexMethod(Singletons.EnemyManager, emType);
 
-            if bigBorder ~= nil then
-                monster.bigBorder = bigBorder;
-                monster.isBig = monster.size >= monster.bigBorder;
-            end
-            
-            if kingBorder ~= nil then
-                monster.kingBorder = kingBorder;
-                monster.isKing = monster.size >= monster.kingBorder;
-            end
-
-            -- check crowns
-            monster.crownNeeded = false;
-
-            if monster.isSmall and not recordIsSmallCrownMethod(Singletons.HunterRecordManager, monster.id) then
-                monster.crownNeeded = true;
-            end
-            -- prioritize king crowns
-            if monster.isKing and not recordIsKingCrownMethod(Singletons.HunterRecordManager, monster.id) then
-                monster.crownNeeded = true;
-            elseif monster.isBig and not recordIsBigCrownMethod(Singletons.HunterRecordManager, monster.id) then
-                monster.crownNeeded = true;
-            end
+            monster.isSmall = recordIsSmallCrownMethod(emType, enemyTypeIndex, size);
+            monster.isBig = recordIsBigCrownMethod(emType, enemyTypeIndex, size);
+            monster.isKing = recordIsKingCrownMethod(emType, enemyTypeIndex, size);
         end
     end
 
-    log.debug("MHR_CrownHelper: registered '" .. enemyName .. "' size '" .. monster.size .. "'");
+    Utils.logDebug("MHR_CrownHelper: registered '" .. enemyName .. "' size '" .. monster.size .. "'");
 
     if Monsters.monsters[enemy] == nil then
         Monsters.monsters[enemy] = monster;
@@ -151,24 +157,30 @@ end
 
 -------------------------------------------------------------------
 
--- get a monster from the enemy
+---Get the chached monster info from the enemy.
+---If this monster has not been cached yet, it will be when called.
+---@param enemy Enemy
+---@return table monster The cached monster table.
 function Monsters.GetMonster(enemy)
     local monster = Monsters.monsters[enemy];
     if monster == nil then
-       monster = Monsters.NewMonster(enemy);
+        monster = Monsters.NewMonster(enemy);
     end
     return monster;
 end
 
 -------------------------------------------------------------------
 
--- current enemies sdk methods
+-- Gets the current amount of boss enemies in the map.
 local getBossEnemyCountMethod = enemyManagerTypeDef:get_method("getBossEnemyCount");
+-- Gets the boss enemy from an index.
 local getBossEnemyMethod = enemyManagerTypeDef:get_method("getBossEnemy");
 
+---Iterates all known monsters and calls  the provided function with it and its index.
+---@param f function The function to call for each monster f(enemy, index)
 function Monsters.IterateMonsters(f)
     -- get current boss enemy count on the map
-    local enemyCount = getBossEnemyCountMethod:call(Singletons.EnemyManager);
+    local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
     if enemyCount == nil then
         return;
     end
@@ -176,7 +188,7 @@ function Monsters.IterateMonsters(f)
     -- iterate over all enemies
     for i = 0, enemyCount - 1, 1 do
         -- get the enemy
-        local enemy = getBossEnemyMethod:call(Singletons.EnemyManager, i);
+        local enemy = getBossEnemyMethod(Singletons.EnemyManager, i);
         if enemy == nil then
             goto continue;
         end
@@ -194,9 +206,99 @@ end
 
 -------------------------------------------------------------------
 
--- initializes/empties the monster list
+---Get the size info for the enemy type provided.
+---Set the update flag to update the cached size info.
+---@param emType EmType|nil
+---@param update boolean
+---@return table sizeInfo The cached size info table.
+function Monsters.GetSizeInfoForEnemyType(emType, update)
+    local monsterDef = Monsters.monsterDefinitions[emType];
+    if not monsterDef then return {}; end
+
+    if monsterDef.sizeInfo ~= nil and not update then
+        return monsterDef.sizeInfo;
+    else
+        local monsterSizeInfo = findEnemeySizeInfoMethod(Singletons.EnemyManager, emType);
+
+        -- get min and max hunted monster size
+        local minHuntedSize = 0;
+        local maxHuntedSize = 0;
+        local guildCardSaveData = Singletons.GuildCardManager._GuildCard;
+        if guildCardSaveData then
+            local guildCardData = guildCardSaveData.MyData;
+            if guildCardData then
+                local enemySizeMinArray = guildCardData.EnemySizeMin;
+                local enemySizeMaxArray = guildCardData.EnemySizeMax;
+                if enemySizeMinArray and enemySizeMaxArray then
+                    local minSizeElem = enemySizeMinArray:get_element(monsterDef.emTypeIndex);
+                    if minSizeElem then
+                        minHuntedSize = minSizeElem.mValue;
+                    end
+                    local maxSizeElem = enemySizeMaxArray:get_element(monsterDef.emTypeIndex);
+                    if maxSizeElem then
+                        maxHuntedSize = maxSizeElem.mValue;
+                    end
+                end
+            end
+        end
+
+        if monsterSizeInfo ~= nil then
+            local sizeInfo = {
+                smallBorder = getSmallBorderMethod(monsterSizeInfo),
+                bigBorder = getBigBorderMethod(monsterSizeInfo),
+                kingBorder = getKingBorderMethod(monsterSizeInfo),
+                smallCrownObtained = recordIsEnemySmallCrownMethod(Singletons.HunterRecordManager, monsterDef.emTypeIndex),
+                bigCrownObtained = recordIsEnemyBigCrownMethod(Singletons.HunterRecordManager, monsterDef.emTypeIndex),
+                kingCrownObtained = recordIsEnemyKingCrownMethod(Singletons.HunterRecordManager, monsterDef.emTypeIndex),
+                minHuntedSize = minHuntedSize,
+                maxHuntedSize = maxHuntedSize,
+                crownNeeded = false,
+                crownEnabled = recordIsCrownEnableMethod(Singletons.HunterRecordManager, monsterDef.emTypeIndex)
+            };
+            sizeInfo.crownNeeded = not sizeInfo.smallCrownObtained or not sizeInfo.bigCrownObtained or not sizeInfo.kingCrownObtained;
+            -- set size info on monsterDefinition
+            monsterDef.sizeInfo = sizeInfo;
+
+            return sizeInfo;
+        end
+    end
+
+    return {};
+end
+
+-------------------------------------------------------------------
+
+---Initializes/empties the monster list.
 function Monsters.InitList()
     Monsters.monsters = {};
+end
+
+-------------------------------------------------------------------
+
+--- Initializes the enemyTypes list and caches enemyType, enemyTypeIndex and name.
+function Monsters.InitEnemyTypesList()
+    local enemyEnum = Utils.GenerateEnum("snow.enemy.EnemyDef.EmTypes");
+    
+    for _, emType in pairs(enemyEnum) do
+        if emType > 0 then
+            local monsterDefinition =  {
+                emType = emType;
+                emTypeIndex = convertEnemyTypeIndexMethod(Singletons.EnemyManager, emType);
+                name = getEnemyNameMessageMethod(Singletons.MessageManager, emType);
+            }
+
+            Monsters.monsterDefinitions[emType] = monsterDefinition;
+        end
+    end
+end
+
+-------------------------------------------------------------------
+
+--- Initializes all size infos
+function Monsters.InitSizeInfos()
+    for _, v in pairs(Monsters.monsterDefinitions) do
+        Monsters.GetSizeInfoForEnemyType(v.emType, true);
+    end
 end
 
 -------------------------------------------------------------------
@@ -204,13 +306,19 @@ end
 -- initializes the module
 function Monsters.InitModule()
     -- hook into the enemy update method
-    sdk.hook(enemyCharacterBaseUpdateMethod, 
+    sdk.hook(enemyCharacterBaseUpdateMethod,
         function(args)
             pcall(Monsters.UpdateMonster, sdk.to_managed_object(args[2]));
         end,
         function(retval)
             return retval;
         end);
+
+    Monsters.InitEnemyTypesList();
+    Monsters.InitSizeInfos();
+    Quests.onGameStatusChanged:add(Monsters.OnGameStatusChangedCallback);
 end
+
+-------------------------------------------------------------------
 
 return Monsters;

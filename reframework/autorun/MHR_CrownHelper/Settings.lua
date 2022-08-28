@@ -7,6 +7,7 @@ Settings.default = {};
 
 -------------------------------------------------------------------
 
+---Initializes the default settings
 function Settings.Init()
     Settings.default = {
         crownIcons = {
@@ -37,6 +38,12 @@ function Settings.Init()
             }
         },
 
+        crownTracker = {
+            showCrownTracker = true,
+            hideComplete = true,
+            showSizeBorders = false
+        },
+
         text = {
             textSize = 14,
         }
@@ -45,17 +52,19 @@ end
 
 -------------------------------------------------------------------
 
+---Loads the settings file
 function Settings.Load()
     local loadedConfig = json.load_file(Settings.configFileName);
     if loadedConfig ~= nil then
         Settings.current = TableHelpers.merge(Settings.default, loadedConfig);
     else
-        Settings.current = TableHelpers.deep_copy(Settings.default);
+        Settings.current = TableHelpers.deep_copy(Settings.default, nil);
     end
 end
 
 -------------------------------------------------------------------
 
+---Saves the settings file
 function Settings.Save()
     local success = json.dump_file(Settings.configFileName, Settings.current);
     if success then

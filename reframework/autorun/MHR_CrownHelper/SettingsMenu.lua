@@ -11,11 +11,12 @@ SettingsMenu.isOpened = false;
 
 -------------------------------------------------------------------
 
+---Draws the settings menu in a imgui window
 function SettingsMenu.Draw()
     imgui.set_next_window_pos(SettingsMenu.windowPosition, 1 << 3, SettingsMenu.windowPivot);
     imgui.set_next_window_size(SettingsMenu.windowSize, 1 << 3);
 
-    SettingsMenu.IsOpened = imgui.begin_window("MHR CrownHelper Settings", Settings.IsOpened, SettingsMenu.windowFlags);
+    SettingsMenu.isOpened = imgui.begin_window("MHR CrownHelper Settings", SettingsMenu.isOpened, SettingsMenu.windowFlags);
 
     if not SettingsMenu.isOpened then
         return;
@@ -79,6 +80,21 @@ function SettingsMenu.Draw()
 
         changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Show size graph", Settings.current.sizeDetails.showSizeGraph);
         settingsChanged = settingsChanged or changed;
+
+        imgui.tree_pop();
+    end
+
+    if imgui.tree_node("Crown Tracker") then
+        changed, Settings.current.crownTracker.showCrownTracker = imgui.checkbox("Show crown tracker", Settings.current.crownTracker.showCrownTracker);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.crownTracker.hideComplete = imgui.checkbox("Hide completed monsters", Settings.current.crownTracker.hideComplete);
+        settingsChanged = settingsChanged or changed;
+        
+        changed, Settings.current.crownTracker.showSizeBorders = imgui.checkbox("Show size borders", Settings.current.crownTracker.showSizeBorders);
+        settingsChanged = settingsChanged or changed;
+
+        imgui.tree_pop();
     end
 
     imgui.end_window();

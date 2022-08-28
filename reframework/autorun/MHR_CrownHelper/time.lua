@@ -10,7 +10,7 @@ Time.timeDelta = 0;
 -------------------------------------------------------------------
 
 function Time.Tick()
-    Time.timeDelta = getFrameTimeMilliseconds:call(application) * 0.01;
+    Time.timeDelta = getFrameTimeMilliseconds(application) * 0.01;
     Time.timeTotal = os.clock();
 end
 

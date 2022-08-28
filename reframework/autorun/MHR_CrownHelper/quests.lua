@@ -1,44 +1,51 @@
 local Quests = {};
 local Singletons = require("MHR_CrownHelper.Singletons");
-local Monsters = require("MHR_CrownHelper.Monsters");
+local Event = require("MHR_CrownHelper.Event");
+local Utils = require("MHR_CrownHelper.Utils");
 
-Quests.index = 0;
+Quests.gameStatus = -1;
 
 local questManagerTypeDef = sdk.find_type_definition("snow.QuestManager");
 local onChangedGameStatus = questManagerTypeDef:get_method("onChangedGameStatus");
-local getStatusMethod = questManagerTypeDef:get_method("getStatus");
+
+local snowGameManagerTypeDef = sdk.find_type_definition("snow.SnowGameManager");
+local getCurrentStatus = snowGameManagerTypeDef:get_method("get_CurrentStatus");
+
+Quests.onGameStatusChanged = Event.New();
 
 -------------------------------------------------------------------
 
-function Quests.Update(args)
+---The update hook function for the
+---@param args any
+function Quests.OnGameStatusChangedHook(args)
     local newQuestStatus = sdk.to_int64(args[3]);
     if newQuestStatus ~= nil then
-        if (Quests.index < 2 and newQuestStatus == 2) or newQuestStatus < 2 then
-            -- Quest begin
-
-            -- clear monster list from last quest
-            Monsters.InitList();
+        -- invoke quest status changed event
+        if newQuestStatus ~= Quests.gameStatus then
+            Quests.gameStatus = newQuestStatus;
+            Quests.onGameStatusChanged(Quests.gameStatus);
         end
 
-        Quests.index = newQuestStatus;
     end
 end
 
 -------------------------------------------------------------------
 
+---Initializes the Quest state
 function Quests.Init()
     if Singletons.QuestManager == nil then
-        log.error("No quest manager");
+        Utils.logError("(Quests) No Quest Manager");
         return;
     end
 
-    local newQuestStatus = getStatusMethod:call(Singletons.QuestManager);
-    if newQuestStatus == nil then
-        log.error("No Quest Status");
+    local newQuestStatus = getCurrentStatus(Singletons.SnowGameManager);
+    if newQuestStatus ~= nil then
+        Quests.gameStatus = newQuestStatus;
+        Quests.onGameStatusChanged(newQuestStatus);
+    else
+        Utils.logError("(Quests) No Game Status");
         return;
     end
-
-    Quests.index = newQuestStatus;
 end
 
 -------------------------------------------------------------------
@@ -46,16 +53,14 @@ end
 function Quests.InitModule()
     Quests.Init();
 
-    sdk.hook(onChangedGameStatus, 
-        function(args) 
-            pcall(Quests.Update, args);
-        end, 
+    sdk.hook(onChangedGameStatus,
+        function(args)
+            pcall(Quests.OnGameStatusChangedHook, args);
+        end,
         function(retval)
             return retval;
         end
     );
 end
-
--------------------------------------------------------------------
 
 return Quests;
