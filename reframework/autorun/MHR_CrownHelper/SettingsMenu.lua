@@ -1,6 +1,7 @@
 local SettingsMenu = {};
 
 local Settings = require("MHR_CrownHelper.Settings");
+local CrownTracker = require("MHR_CrownHelper.CrownTracker");
 
 SettingsMenu.windowPosition = Vector2f.new(400, 200);
 SettingsMenu.windowPivot = Vector2f.new(0, 0);
@@ -58,6 +59,8 @@ function SettingsMenu.Draw()
         end
         settingsChanged = settingsChanged or changed;
 
+        imgui.new_line();
+
         imgui.tree_pop();
     end
 
@@ -65,34 +68,53 @@ function SettingsMenu.Draw()
         changed, Settings.current.sizeDetails.showSizeDetails = imgui.checkbox("Show size details", Settings.current.sizeDetails.showSizeDetails);
         settingsChanged = settingsChanged or changed;
 
+        imgui.new_line();
+
         local SizeDetailsOffset = Vector2f.new(Settings.current.sizeDetails.sizeDetailsOffset.x, Settings.current.sizeDetails.sizeDetailsOffset.y);
-        changed, SizeDetailsOffset = imgui.drag_float2("Hunter Record Icon Offset", SizeDetailsOffset, 1, 0, 0, "%.1f");
+        changed, SizeDetailsOffset = imgui.drag_float2("Size Details Offset", SizeDetailsOffset, 1, 0, 0, "%.1f");
         if changed then
             Settings.current.sizeDetails.sizeDetailsOffset.x = SizeDetailsOffset.x;
             Settings.current.sizeDetails.sizeDetailsOffset.y = SizeDetailsOffset.y;
         end
         settingsChanged = settingsChanged or changed;
 
-        imgui.new_line();
-
         changed, Settings.current.sizeDetails.showHunterRecordIcons = imgui.checkbox("Show hunter record icons", Settings.current.sizeDetails.showHunterRecordIcons);
         settingsChanged = settingsChanged or changed;
 
-        changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Show size graph", Settings.current.sizeDetails.showSizeGraph);
+        changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Draw size graph", Settings.current.sizeDetails.showSizeGraph);
         settingsChanged = settingsChanged or changed;
+
+        imgui.new_line();
 
         imgui.tree_pop();
     end
 
     if imgui.tree_node("Crown Tracker") then
+        if not CrownTracker.crownTableVisible and Settings.current.crownTracker.showCrownTracker then
+            if imgui.button("Open Crown Tracker") then
+                CrownTracker.crownTableVisible = true;
+            end
+        end
+
         changed, Settings.current.crownTracker.showCrownTracker = imgui.checkbox("Show crown tracker", Settings.current.crownTracker.showCrownTracker);
         settingsChanged = settingsChanged or changed;
 
+        imgui.new_line();
+
         changed, Settings.current.crownTracker.hideComplete = imgui.checkbox("Hide completed monsters", Settings.current.crownTracker.hideComplete);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.crownTracker.showCurrentRecords = imgui.checkbox("Show current records", Settings.current.crownTracker.showCurrentRecords);
         settingsChanged = settingsChanged or changed;
         
         changed, Settings.current.crownTracker.showSizeBorders = imgui.checkbox("Show size borders", Settings.current.crownTracker.showSizeBorders);
         settingsChanged = settingsChanged or changed;
+
+        imgui.new_line();
+
+        if imgui.button("Reset window position/size") then
+            CrownTracker.ResetWindow();
+        end
 
         imgui.tree_pop();
     end

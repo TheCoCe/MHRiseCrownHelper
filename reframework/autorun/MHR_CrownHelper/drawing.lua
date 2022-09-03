@@ -3,6 +3,7 @@ local Singletons = require("MHR_CrownHelper.Singletons")
 --.local Time = require("MHR_CrownHelper.Time");
 local Settings = require("MHR_CrownHelper.Settings");
 local Monsters = require("MHR_CrownHelper.Monsters");
+local Utils    = require("MHR_CrownHelper.Utils")
 
 -- window size
 local getMainViewMethod = sdk.find_type_definition("via.SceneManager"):get_method("get_MainView");
@@ -20,7 +21,7 @@ local d2dFont;
 local imageResourcePath = "MHR_CrownHelper/";
 local crownImages = {};
 local bookImage;
-local monsterImages = {};
+local monsterImage;
 
 -------------------------------------------------------------------
 
@@ -31,8 +32,7 @@ function Drawing.Init()
         crownImages[2] = d2d.Image.new(imageResourcePath .. "BigCrown.png");
         crownImages[3] = d2d.Image.new(imageResourcePath .. "KingCrown.png");
 
-        monsterImages[1] = d2d.Image.new(imageResourcePath .. "monster1.png");
-        monsterImages[2] = d2d.Image.new(imageResourcePath .. "monster2.png");
+        monsterImage = d2d.Image.new(imageResourcePath .. "monster1.png");
 
         bookImage = d2d.Image.new(imageResourcePath .. "Book.png");
 
@@ -182,7 +182,7 @@ function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, mo
     local minWidth, minHeight = d2dFont:measure(minString);
 
     local maxString = string.format("%.0f", kingBorder * 100);
-    local maxWidth, maxHeight = d2dFont:measure(maxString);
+    local maxWidth, _ = d2dFont:measure(maxString);
 
     local textPadMult = 2;
     local heightPadMult = 1.5;
@@ -219,7 +219,7 @@ function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, mo
                 image = crownImages[1];
             end
         else
-            image = monsterImages[1];
+            image = monsterImage;
         end
         
         Drawing.DrawImage(image, posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, iconSize, iconSize, 0.5, 0.7);
@@ -441,76 +441,6 @@ function Drawing.DrawMonsterDetailsText(monster)
         if crown_string ~= nil then
             imgui.text("Crown: " .. crown_string);
         end
-    end
-end
-
--------------------------------------------------------------------
-
----Draws the monster size table in an imgui window.
-function Drawing.DrawMonsterSizeTable()
-    -- ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_BordersInnerH |ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp
-    local tableFlags = 1 << 7 | 1 << 9 | 1 << 13 | 1 << 8 | 1 << 10;
-    local tableSize = Settings.current.crownTracker.showSizeBorders and 7 or 4;
-
-    if imgui.begin_table("Monster Crown Tracker", tableSize, tableFlags) then
-        imgui.table_setup_column("Name");
-        imgui.table_setup_column("E");
-        imgui.table_setup_column("M");
-        imgui.table_setup_column("S");
-        imgui.table_setup_column("G");
-
-        if Settings.current.crownTracker.showSizeBorders then
-            imgui.table_setup_column("M");
-            imgui.table_setup_column("S");
-            imgui.table_setup_column("G");
-        end
-
-        imgui.table_headers_row();
-
-        for _, v in pairs(Monsters.monsterDefinitions) do
-            local sizeDetails = Monsters.GetSizeInfoForEnemyType(v.emType, false);
-
-            if sizeDetails ~= nil then
-                if not sizeDetails.crownEnabled or (Settings.current.crownTracker.hideComplete and sizeDetails.smallCrownObtained and 
-                    sizeDetails.bigCrownObtained and sizeDetails.kingCrownObtained) then
-                        goto continue;
-                end
-
-                imgui.table_next_row();
-                imgui.table_next_column();
-                imgui.text(v.name);
-                
-                imgui.table_next_column();
-                if sizeDetails.smallCrownObtained then
-                    imgui.text("X");
-                end
-                
-                imgui.table_next_column();
-                if sizeDetails.bigCrownObtained then
-                    imgui.text("X");
-                end
-                
-                imgui.table_next_column();
-                if sizeDetails.kingCrownObtained then
-                    imgui.text("X");
-                end
-                
-                if Settings.current.crownTracker.showSizeBorders then
-                    imgui.table_next_column();
-                    imgui.text(string.format("%.0f", sizeDetails.smallBorder * 100));
-                    
-                    imgui.table_next_column();
-                    imgui.text(string.format("%.0f", sizeDetails.bigBorder * 100));
-                    
-                    imgui.table_next_column();
-                    imgui.text(string.format("%.0f", sizeDetails.kingBorder * 100));
-                end
-            end
-
-            ::continue::
-        end
-
-        imgui.end_table();
     end
 end
 

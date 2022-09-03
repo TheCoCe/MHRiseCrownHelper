@@ -2,6 +2,8 @@ local Event = {};
 
 local Utils = require("MHR_CrownHelper.Utils")
 
+-------------------------------------------------------------------
+
 ---Checks if the argument is of type function
 ---@param f any
 ---@return boolean isFunction true when the argument is a function
@@ -12,6 +14,8 @@ local function IsFunction(f)
         return false;
     end
 end
+
+-------------------------------------------------------------------
 
 ---Adds a listener to the event
 ---@param e table
@@ -27,6 +31,8 @@ local function AddListener(e, f)
     end
 end
 
+-------------------------------------------------------------------
+
 ---Removes a listener from the event
 ---@param e table
 ---@param f function
@@ -41,12 +47,16 @@ local function RemoveListener(e, f)
     end
 end
 
+-------------------------------------------------------------------
+
 ---Clears all listeners from the event
 ---@param e table
 ---@param f function
 local function ClearListeners(e, f)
     e.__listeners = {};
 end
+
+-------------------------------------------------------------------
 
 function Event.New()
     return setmetatable({

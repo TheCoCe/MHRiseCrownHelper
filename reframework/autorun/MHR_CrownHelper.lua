@@ -5,20 +5,16 @@ local Monsters      = require("MHR_CrownHelper.Monsters");
 local Drawing       = require("MHR_CrownHelper.Drawing");
 --local Time = require("MHR_CrownHelper.Time");
 local Settings      = require("MHR_CrownHelper.Settings");
-local SettingsMenu  = require("MHR_CrownHelper.SettingsMenu")
-local Utils         = require("MHR_CrownHelper.Utils")
+local SettingsMenu  = require("MHR_CrownHelper.SettingsMenu");
+local Utils         = require("MHR_CrownHelper.Utils");
+local CrownTracker  = require("MHR_CrownHelper.CrownTracker");
 
 Settings.InitModule();
 CrownHelper.initialized = false;
 
--- table runtime data
-local crownTableVisible = true;
-
-
 -- TODO: List:
--- fix crown tracker size
--- order the enemy type list
--- add player captured sizes to crown tracker
+-- update readme to include proper credits
+-- fix non d2d sizeGraph drawing
 
 -------------------------------------------------------------------
 
@@ -47,19 +43,9 @@ function CrownHelper.OnFrame()
         CrownHelper.HandleInit();
     -- player ingame
     else
-        CrownHelper.DrawSettingsMenu();
-        
         -- player in village
         if Quests.gameStatus == 1 then
-            if Settings.current.crownTracker.showCrownTracker and crownTableVisible then
-                imgui.set_next_window_size({-1, 400}, 1 << 3);
-                if imgui.begin_window("Monster Crown Tracker", crownTableVisible, 1 << 14 | 1 << 16) then
-                    Drawing.DrawMonsterSizeTable();
-                    imgui.end_window();
-                else
-                    crownTableVisible = false;
-                end
-            end
+            CrownTracker.DrawCrownTracker();
         end
 
         -- player on quest
@@ -70,6 +56,8 @@ function CrownHelper.OnFrame()
             end
         end
     end
+
+    CrownHelper.DrawSettingsMenu();
 end
 
 -------------------------------------------------------------------

@@ -41,7 +41,8 @@ function Settings.Init()
         crownTracker = {
             showCrownTracker = true,
             hideComplete = true,
-            showSizeBorders = false
+            showSizeBorders = false,
+            showCurrentRecords = false
         },
 
         text = {

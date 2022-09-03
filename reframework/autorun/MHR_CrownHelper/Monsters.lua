@@ -139,14 +139,14 @@ function Monsters.NewMonster(enemy)
             monster.size = size;
 
             local enemyTypeIndex = convertEnemyTypeIndexMethod(Singletons.EnemyManager, emType);
-
-            monster.isSmall = recordIsSmallCrownMethod(emType, enemyTypeIndex, size);
-            monster.isBig = recordIsBigCrownMethod(emType, enemyTypeIndex, size);
-            monster.isKing = recordIsKingCrownMethod(emType, enemyTypeIndex, size);
+            monster.isSmall = recordIsSmallCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
+            monster.isBig = recordIsBigCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
+            monster.isKing = recordIsKingCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
         end
     end
 
-    Utils.logDebug("MHR_CrownHelper: registered '" .. enemyName .. "' size '" .. monster.size .. "'");
+    local sizeString = (monster.isSmall and "[small]" or (monster.isKing and "[king]" or (monster.isBig and "[big]" or "")));
+    Utils.logDebug("MHR_CrownHelper: registered '" .. enemyName .. "' \tSize: '" ..  string.format("%.2f", monster.size) .. "' " .. sizeString);
 
     if Monsters.monsters[enemy] == nil then
         Monsters.monsters[enemy] = monster;

@@ -5,6 +5,7 @@ local nameString = "[MHRCrownHelper]: ";
 Utils.debugMode = true;
 
 --[[ Logging ]]--
+-------------------------------------------------------------------
 
 --- Logs a info message
 ---@param message string
@@ -12,17 +13,23 @@ function Utils.logInfo(message)
     log.info(nameString .. message);
 end
 
+-------------------------------------------------------------------
+
 --- Logs a warning message
 ---@param message string
 function Utils.logWarn(message)
     log.warn(nameString .. message);
 end
 
+-------------------------------------------------------------------
+
 --- Logs a error message
 ---@param message string
 function Utils.logError(message)
     log.error(nameString .. message);
 end
+
+-------------------------------------------------------------------
 
 --- Logs a debug message
 ---@param message string
@@ -33,6 +40,7 @@ function Utils.logDebug(message)
 end
 
 --[[ Enums ]]--
+-------------------------------------------------------------------
 
 function Utils.GenerateEnum(typename)
     local t = sdk.find_type_definition(typename)
@@ -52,5 +60,7 @@ function Utils.GenerateEnum(typename)
 
     return enum
 end
+
+-------------------------------------------------------------------
 
 return Utils;
