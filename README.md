@@ -1,6 +1,11 @@
 # MHRiseCrownHelper
 Simple REFramework based script to notify you if a there is a chance to obtain a crown in the active quest.
 
+## Crown Display/Size Graph
+![In Quest Crown Display/Size Graph](https://user-images.githubusercontent.com/24358964/188280983-1010d69d-371b-4487-a65c-f72371747f5b.png)
+## Crown Tracker
+![Village Crown Tracker Window](https://user-images.githubusercontent.com/24358964/188281023-89a39abe-9c40-4273-a82c-4c1b43c60c51.png)
+
 You can access the Settings via the reframework script generated ui panel.
 
 ## Requirements
