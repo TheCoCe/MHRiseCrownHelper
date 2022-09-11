@@ -1,14 +1,15 @@
 local CrownHelper = {};
-local Singletons    = require("MHR_CrownHelper.Singletons");
-local Quests        = require("MHR_CrownHelper.Quests");
-local Monsters      = require("MHR_CrownHelper.Monsters");
-local Drawing       = require("MHR_CrownHelper.Drawing");
-local Time = require("MHR_CrownHelper.Time");
-local Settings      = require("MHR_CrownHelper.Settings");
-local SettingsMenu  = require("MHR_CrownHelper.SettingsMenu");
-local NativeSettingsMenu = require("MHR_CrownHelper.NativeSettingsMenu");
-local Utils         = require("MHR_CrownHelper.Utils");
-local CrownTracker  = require("MHR_CrownHelper.CrownTracker");
+local Singletons            = require("MHR_CrownHelper.Singletons");
+local Quests                = require("MHR_CrownHelper.Quests");
+local Monsters              = require("MHR_CrownHelper.Monsters");
+local Drawing               = require("MHR_CrownHelper.Drawing");
+local Time                  = require("MHR_CrownHelper.Time");
+local Settings              = require("MHR_CrownHelper.Settings");
+local SettingsMenu          = require("MHR_CrownHelper.SettingsMenu");
+local NativeSettingsMenu    = require("MHR_CrownHelper.NativeSettingsMenu");
+local Utils                 = require("MHR_CrownHelper.Utils");
+local CrownTracker          = require("MHR_CrownHelper.CrownTracker");
+local SizeGraph             = require("MHR_CrownHelper.SizeGraph");
 
 Settings.InitModule();
 NativeSettingsMenu.InitModule();
@@ -17,11 +18,6 @@ CrownHelper.initialized = false;
 -- TODO: List:
 -- fix non d2d sizeGraph drawing
 -- add icon when the record is already registered but better than the previously registered one
--- move all monster drawing stuff to respective classes
-
--- New:
--- added native settings menu support via OptionsMenu mod
--- added animations to sizeGraph
 
 -------------------------------------------------------------------
 
@@ -36,7 +32,7 @@ function CrownHelper.HandleInit()
         if Quests.gameStatus > 0 then
             -- Init modules that require ingame
             Monsters.InitModule();
-
+            SizeGraph.InitModule();
             CrownHelper.initialitzed = true;
         end
     end
@@ -75,6 +71,7 @@ end
 
 function CrownHelper.DrawD2D()
     Time.D2DTick();
+    SizeGraph.Update(Time.timeDeltaD2D);
     Drawing.Update(Time.timeDeltaD2D);
 end
 
