@@ -1,9 +1,11 @@
-local Drawing = {};
+local Drawing    = {};
 local Singletons = require("MHR_CrownHelper.Singletons")
---.local Time = require("MHR_CrownHelper.Time");
-local Settings = require("MHR_CrownHelper.Settings");
-local Monsters = require("MHR_CrownHelper.Monsters");
-local Utils    = require("MHR_CrownHelper.Utils")
+local Settings   = require("MHR_CrownHelper.Settings");
+local Monsters   = require("MHR_CrownHelper.Monsters");
+local Utils      = require("MHR_CrownHelper.Utils")
+local Animation  = require("MHR_CrownHelper.Animation")
+local Quests     = require("MHR_CrownHelper.Quests")
+local SizeGraph  = require("MHR_CrownHelper.SizeGraph")
 
 -- window size
 local getMainViewMethod = sdk.find_type_definition("via.SceneManager"):get_method("get_MainView");
@@ -14,27 +16,125 @@ local getMainCamMethod = sdk.find_type_definition("snow.GameCamera"):get_method(
 local getAspectRatio = sdk.find_type_definition("via.Camera"):get_method("get_AspectRatio");
 
 -- font resources
-local imguiFont;
+--local imguiFont;
 local d2dFont;
 
 -- image resources
-local imageResourcePath = "MHR_CrownHelper/";
-local crownImages = {};
+Drawing.imageResourcePath = "MHR_CrownHelper/";
+Drawing.imageResources = {};
 local bookImage;
-local monsterImage;
+
+-- tgCamera gui visibility
+local getTgCameraHudMethod = sdk.find_type_definition("snow.gui.GuiManager"):get_method("get_refGuiHud_TgCamera");
+local getTgCameraHudComponentMethod = sdk.find_type_definition("via.gui.PlayObject"):get_method("get_Component");
+local getTgCameraHudEnabled = sdk.find_type_definition("via.gui.GUI"):get_method("get_Enabled");
+local tgCamGuiComponent;
+local guiTgCameraVisible = false;
+
+-- runtime
+local TargetCamVisibleFlag = false;
+local sizeGraphVisible = false;
+local sizeGraphAnimating = false;
+
+-- local namespaces
+local Callbacks = {};
+local Anims = {};
+
+local SizeGraphMonsterList = {};
+local SizeGraphWidgets = {};
+local monstersToRemove = {};
+local monstersToAdd = {};
+
+------------------------- Events ----------------------------------
+
+function Callbacks.OnGuiTgCameraVisibilityChanged(vis)
+    if Quests.gameStatus == 2 then
+        if vis and not TargetCamVisibleFlag then
+            TargetCamVisibleFlag = true;
+            Anims.SizeGraphOpen();
+        end
+    end
+end
+
+function Callbacks.OnGameStatusChanged(state)
+    if state < 2 then
+        TargetCamVisibleFlag = false;
+        SizeGraphMonsterList = {};
+        monstersToRemove = {};
+        monstersToAdd = {};
+    elseif state == 2 then
+        -- reset tgCamGuiComponent (no longer valid)
+        tgCamGuiComponent = nil;
+        -- start delay for size details auto hide
+        if Settings.current.sizeDetails.autoHideAfter > 0 then
+            Animation.Delay(Settings.current.sizeDetails.autoHideAfter, function()
+                Anims.SizeGraphClose();
+            end)
+        end
+    end
+end
+
+------------------------- Anims ----------------------------------
+
+function Anims.SizeGraphOpen()
+    sizeGraphVisible = true;
+    sizeGraphAnimating = true;
+
+    local i = 1;
+    local showNextItem = function(f)
+        if i <= #SizeGraphMonsterList then
+            local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
+            if not Widget.AnimData.visible then
+                Widget:Show();
+            end
+            Animation.Delay(0.1, function()
+                i = i + 1;
+                f(f);
+            end);
+        else
+            sizeGraphAnimating = false;
+        end
+    end
+
+    showNextItem(showNextItem);
+end
+
+function Anims.SizeGraphClose()
+    local i = #SizeGraphMonsterList;
+    sizeGraphAnimating = true;
+
+    local hideNextItem = function(f)
+        if i >= 1 then
+            local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
+            if Widget.AnimData.visible then
+                Widget:Hide();
+            end
+            Animation.Delay(0.1, function()
+                i = i - 1;
+                f(f);
+            end)
+        else
+            sizeGraphVisible = false;
+            sizeGraphAnimating = false;
+        end
+    end
+
+    hideNextItem(hideNextItem);
+end
 
 -------------------------------------------------------------------
 
 ---Initializes the requierd resources for drawing
 function Drawing.Init()
     if d2d ~= nil then
-        crownImages[1] = d2d.Image.new(imageResourcePath .. "MiniCrown.png");
-        crownImages[2] = d2d.Image.new(imageResourcePath .. "BigCrown.png");
-        crownImages[3] = d2d.Image.new(imageResourcePath .. "KingCrown.png");
+        Drawing.InitImage("miniCrown", "MiniCrown.png");
+        Drawing.InitImage("bigCrown", "BigCrown.png");
+        Drawing.InitImage("kingCrown", "KingCrown.png");
 
-        monsterImage = d2d.Image.new(imageResourcePath .. "monster1.png");
+        Drawing.InitImage("monster", "monster1.png");
+        --monsterImage = d2d.Image.new(Drawing.imageResourcePath .. "monster1.png");
 
-        bookImage = d2d.Image.new(imageResourcePath .. "Book.png");
+        bookImage = d2d.Image.new(Drawing.imageResourcePath .. "Book.png");
 
         d2dFont = d2d.Font.new("Consolas", Settings.current.text.textSize, false);
     end
@@ -42,21 +142,120 @@ end
 
 -------------------------------------------------------------------
 
----Update loop (used for animation etc.)
+---Initializes a image resource from the given image name to be retrieved later using the given key.
+---The image directroy will automatically be prepended to the image path.
+---@param key string
+---@param image string
+function Drawing.InitImage(key, image)
+    if d2d ~= nil then
+        Drawing.imageResources[key] = d2d.Image.new(Drawing.imageResourcePath .. image);
+    end
+end
+
+-------------------------------------------------------------------
+
+---Update loop (used for animation/ui updates etc.)
 ---@param deltaTime number
 function Drawing.Update(deltaTime)
-    --    if d2d ~= nil then
-    --        d2d.text(font, string.format("%.2f", deltaTime), 200, 200, 0xFF000000);
-    --    end
-    --
-    --    local size = 100 * math.sin(time.time_total);
-    --    drawing.draw_rect(100, 100, size, size, 0xFF000000);
-    --
-    --    for i = 1, #active_anims, 1 do
-    --        if not coroutine.resume(active_anims[i]) then
-    --            table.remove(active_anims, i);
-    --        end
-    --    end
+    Animation.Update(deltaTime);
+
+    -- handle new monsters
+    -- FIXME: Monsters are often removed and added in the same timeframe
+    -- this causes the hide animation to play for anim index 3  and then show for index 4
+    -- while index 4 is showing index 3 is removed which causes index 4 (still in show)
+    -- to jump to index 3 and thus be hidden as 3 was hidden
+    -- either lock indices while animating or save a monster to anim data map instead of hard indices
+    if TargetCamVisibleFlag then
+        if #monstersToAdd > 0 then
+            if sizeGraphVisible then
+                if not sizeGraphAnimating then
+                    SizeGraphMonsterList[#SizeGraphMonsterList + 1] = monstersToAdd[1];
+                    table.remove(monstersToAdd, 1);
+                    local monster = SizeGraphMonsterList[#SizeGraphMonsterList];
+                    SizeGraphWidgets[monster] = SizeGraph.New();
+                    SizeGraphWidgets[monster]:show(5);
+                end
+            else
+                SizeGraphMonsterList[#SizeGraphMonsterList + 1] = monstersToAdd[1];
+                table.remove(monstersToAdd, 1);
+                local monster = SizeGraphMonsterList[#SizeGraphMonsterList];
+                SizeGraphWidgets[monster] = SizeGraph.New();
+
+                Anims.SizeGraphOpen();
+            end
+        end
+
+        if #monstersToRemove > 0 then
+            Utils.logDebug("Monsters to remove > 0");
+            if sizeGraphVisible then
+                Utils.logDebug("SizeGraphVisible = true");
+                if not sizeGraphAnimating then
+                    Utils.logDebug("sizeGraph is not animating");
+                    for i = 1, #SizeGraphMonsterList, 1 do
+                        if SizeGraphMonsterList[i] == monstersToRemove[1] then
+                            Utils.logDebug("Found monster to remove");
+                            local monster = monstersToRemove[1];
+                            SizeGraphWidgets[monster]:hide(5, function()
+                                Utils.logDebug("Remove from sizeGraphMonsterList");
+                                table.remove(SizeGraphMonsterList, i);
+                                SizeGraphWidgets[monster] = nil;
+                            end)
+
+                            table.remove(monstersToRemove, 1);
+                            break;
+                        end
+                    end
+                end
+            else
+                -- remove
+                for i = 1, #SizeGraphMonsterList, 1 do
+                    if SizeGraphMonsterList[i] == monstersToRemove[1] then
+                        table.remove(SizeGraphMonsterList, i);
+                        table.remove(monstersToRemove, i);
+                        break;
+                    end
+                end
+            end
+        end
+    end
+
+    -- get tgCamera component if current is invalid
+    if not tgCamGuiComponent and Singletons.GuiManager then
+        local guiHud_tgCam = getTgCameraHudMethod(Singletons.GuiManager);
+        if guiHud_tgCam then
+            local root = guiHud_tgCam:get_field("_Root");
+            if root then
+                tgCamGuiComponent = getTgCameraHudComponentMethod(root);
+            end
+        end
+    end
+
+    -- update tgCamera visibility and invoke event
+    if tgCamGuiComponent then
+        local visibility = getTgCameraHudEnabled(tgCamGuiComponent);
+        if visibility ~= guiTgCameraVisible then
+            guiTgCameraVisible = visibility;
+            Callbacks.OnGuiTgCameraVisibilityChanged(guiTgCameraVisible);
+        end
+    end
+
+    -- draw in quest infos
+    if Quests.gameStatus == 2 then
+        -- iterate over all monsters and call DrawMonsterCrown for each one
+        if Settings.current.crownIcons.showCrownIcons then
+            if guiTgCameraVisible then
+                Monsters.IterateMonsters(Drawing.DrawMonsterCrown);
+            end
+        end
+        if Settings.current.sizeDetails.showSizeDetails then
+            if guiTgCameraVisible then
+                -- Monsters.IterateMonsters(Drawing.DrawMonsterDetails);
+                for i = 1, #SizeGraphMonsterList, 1 do
+                    Drawing.DrawMonsterDetails(SizeGraphMonsterList[i], i - 1);
+                end
+            end
+        end
+    end
 end
 
 -------------------------------------------------------------------
@@ -124,6 +323,19 @@ end
 
 -------------------------------------------------------------------
 
+---Measures the text in the current drawing font
+---@param text string
+---@return number
+function Drawing.MeasureText(text)
+    if d2dFont then
+        return d2dFont:measure(text);
+    end
+
+    return 0;
+end
+
+-------------------------------------------------------------------
+
 ---Draws an image at the specified location with optional size and pivot
 ---@param image any
 ---@param posx number
@@ -133,8 +345,8 @@ end
 ---@param pivotx number|nil
 ---@param pivoty number|nil
 function Drawing.DrawImage(image, posx, posy, sizex, sizey, pivotx, pivoty)
-    if d2d == nil or image == nil then 
-        return; 
+    if d2d == nil or image == nil then
+        return;
     end
 
     pivotx = pivotx or 0;
@@ -163,8 +375,10 @@ end
 ---@param smallBorder number
 ---@param bigBorder number
 ---@param kingBorder number
-function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, monsterSize, smallBorder, bigBorder, kingBorder)
-    
+---@param color? number
+function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, monsterSize, smallBorder, bigBorder,
+                               kingBorder, color)
+    color = color or 0xFFFFFFFF;
     -- draw |---------|-o--|
 
     local normalizedSize = (monsterSize - smallBorder) / (kingBorder - smallBorder);
@@ -177,7 +391,7 @@ function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, mo
 
     local sizeString = string.format("%.0f", monsterSize * 100);
     local sizeWidth, sizeHeight = d2dFont:measure(sizeString);
-    
+
     local minString = string.format("%.0f", smallBorder * 100);
     local minWidth, minHeight = d2dFont:measure(minString);
 
@@ -186,30 +400,32 @@ function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, mo
 
     local textPadMult = 2;
     local heightPadMult = 1.5;
-    
-    local scaledSizex = sizex - (minWidth  * textPadMult + maxWidth * textPadMult);
+
+    local scaledSizex = sizex - (minWidth * textPadMult + maxWidth * textPadMult);
 
     -- Draw:        100
-    Drawing.DrawText(sizeString, posx + minWidth * textPadMult + scaledSizex * normalizedSize - 0.5 * sizeWidth, posy, 0xFFFFFFFF);
+    Drawing.DrawText(sizeString, posx + minWidth * textPadMult + scaledSizex * normalizedSize - 0.5 * sizeWidth, posy,
+        color);
     -- Draw: 90
-    Drawing.DrawText(minString, posx, posy + heightPadMult * sizeHeight, 0xFFFFFFFF);
+    Drawing.DrawText(minString, posx, posy + heightPadMult * sizeHeight, color);
     -- Draw: 90            123
-    Drawing.DrawText(maxString, posx + sizex - maxWidth, posy + heightPadMult * sizeHeight, 0xFFFFFFFF);
+    Drawing.DrawText(maxString, posx + sizex - maxWidth, posy + heightPadMult * sizeHeight, color);
 
     local lineHeight = posy + heightPadMult * sizeHeight + 0.5 * minHeight;
     -- Draw: 90 ----------- 123
-    Drawing.DrawRect(posx + minWidth * textPadMult, lineHeight, scaledSizex , lineWidth, 0xFFFFFFFF, 0, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult, lineHeight, scaledSizex, lineWidth, color, 0, 0.5);
     -- Draw: 90 |---------- 123
-    Drawing.DrawRect(posx + minWidth * textPadMult, lineHeight, lineWidth, sizey, 0xFFFFFFFF, 0.5, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult, lineHeight, lineWidth, sizey, color, 0.5, 0.5);
     -- Draw: 90 |---------| 123
-    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex, lineHeight, lineWidth, sizey, 0xFFFFFFFF, 0.5, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex, lineHeight, lineWidth, sizey, color, 0.5, 0.5);
     -- Draw: 90 |------|--| 123
-    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex * normalizedBigSize, lineHeight, lineWidth, sizey, 0xFFFFFFFF, 0.5, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex * normalizedBigSize, lineHeight, lineWidth, sizey,
+        color, 0.5, 0.5);
 
     -- draw crown image
     if d2d ~= nil then
         local image = nil;
-        
+
         if normalizedSize >= normalizedBigSize or normalizedSize == 0 then
             if normalizedSize == 1 then
                 image = crownImages[3];
@@ -221,50 +437,52 @@ function Drawing.DrawSizeGraph(posx, posy, sizex, sizey, lineWidth, iconSize, mo
         else
             image = monsterImage;
         end
-        
-        Drawing.DrawImage(image, posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, iconSize, iconSize, 0.5, 0.7);
+
+        Drawing.DrawImage(image, posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, iconSize,
+            iconSize, 0.5, 0.7);
     else
-        draw.filled_circle(posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, iconSize * 0.5, 0xFFFFFFFF, 16);
+        draw.filled_circle(posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, iconSize * 0.5,
+            color, 16);
     end
 end
 
 -------------------------------------------------------------------
 
 -- Top right camera target monster widget size values in percent derived from pixels in 2560x1440
-local ctPadRight = 0.01953125;      --  50
-local ctPadTop = 0.0243056;         --  35
-local ctItemWidth = 0.0449;    -- 115
-local ctPadItem = 0.006;        --  18
-local ctPadItemBotom = 0.0104167;   --  15
-local ctInfoHeight = 0.029167;      --  42
+local ctPadRight = 0.01953125; --  50
+local ctPadTop = 0.0243056; --  35
+local ctItemWidth = 0.0449; -- 115
+local ctPadItem = 0.006; --  18
+local ctPadItemBotom = 0.0104167; --  15
+local ctInfoHeight = 0.029167; --  42
 
 ---Draws a crown on top of a monster icon in the top right.
 ---@param monster table
 ---@param index number
 function Drawing.DrawMonsterCrown(monster, index)
-    if monster.isSmall or monster.isBig or monster.isKing then
+    if (monster.isSmall or monster.isBig or monster.isKing) then
         local w, h = Drawing.GetWindowSize();
-        
+
         -- crown size
         local size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.crownIconSizeMultiplier;
-        
+
         -- place crowns on icon
         local posx = (ctPadRight * w) + (index + 1) * (ctItemWidth * w) + index * (ctPadItem * w);
         local posy = (ctPadTop * h) + (ctItemWidth * w) - (size * 1.1);
-        
+
         -- transform position
         posx, posy = Drawing.FromTopRight(posx, posy);
 
         posx = posx + Settings.current.crownIcons.crownIconOffset.x;
         posy = posy + Settings.current.crownIcons.crownIconOffset.y;
-        
+
         local id = 1;
         if monster.isKing then
             id = 3;
         elseif monster.isBig then
             id = 2;
         end
-        
+
         Drawing.DrawImage(crownImages[id], posx, posy, size, size);
 
         local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
@@ -293,6 +511,8 @@ local detailInfoSize = 80;
 ---@param monster table
 ---@param index number
 function Drawing.DrawMonsterDetails(monster, index)
+    if not sizeGraphVisible then return; end
+
     local headerString = monster.name .. ": ";
 
     local crownString = nil;
@@ -316,20 +536,23 @@ function Drawing.DrawMonsterDetails(monster, index)
 
     local w, h = Drawing.GetWindowSize();
     local posx = (ctPadRight * w) + 3 * (ctItemWidth * w) + 2 * (ctPadItem * w);
-    local posy = (ctPadTop * h) + (ctItemWidth * w) + 2 * (ctPadItemBotom * h) + (ctInfoHeight * h) + (detailInfoSize * index);
+    local posy = (ctPadTop * h) + (ctItemWidth * w) + 2 * (ctPadItemBotom * h) + (ctInfoHeight * h) +
+        (detailInfoSize * index);
+
+    local SizeGraphWidget = SizeGraphWidgets[monster];
 
     posx, posy = Drawing.FromTopRight(posx, posy);
-    posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x;
-    posy = posy + Settings.current.sizeDetails.sizeDetailsOffset.y;
+    posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x + SizeGraphWidget.AnimData.offset.x; --animData.offset.x;
+    posy = posy + Settings.current.sizeDetails.sizeDetailsOffset.y + SizeGraphWidget.AnimData.offset.y;
 
-    
     -- Draw the following:
-    
+
     -- Monster name
     --                    114
     -- 90 ├────────────┼──♛───┤ 123
-    
-    Drawing.DrawText(headerString, posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
+
+    Drawing.DrawText(headerString, posx, posy, SizeGraphWidget.AnimData.textColor, true, 1.5, 1.5,
+        SizeGraphWidget.AnimData.textShadowColor);
 
     local _, height = d2dFont:measure(headerString);
 
@@ -337,110 +560,18 @@ function Drawing.DrawMonsterDetails(monster, index)
     if Settings.current.sizeDetails.showSizeGraph then
         local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
         if sizeInfo ~= nil then
-            Drawing.DrawSizeGraph(posx, posy, ((3 * ctItemWidth * w) + (2 * ctPadItem * w)), 15, 2, 32 , monster.size, sizeInfo.smallBorder, sizeInfo.bigBorder, sizeInfo.kingBorder);
+            SizeGraphWidget:draw(posx, posy, ((3 * ctItemWidth * w) + (2 * ctPadItem * w)), 15, 2, 
+                monster.size, sizeInfo.smallBorder, sizeInfo.bigBorder, sizeInfo.kingBorder);
+            --[[
+                Drawing.DrawSizeGraph(posx, posy, ((3 * ctItemWidth * w) + (2 * ctPadItem * w)), 15, 2,
+                SizeGraphWidget.AnimData.iconSize, monster.size,
+                sizeInfo.smallBorder, sizeInfo.bigBorder, sizeInfo.kingBorder, SizeGraphWidget.AnimData.graphColor);
+            ]]
         end
     else
-        Drawing.DrawText("Size: " .. string.format("%.0f", monster.size * 100), posx, posy, 0xFFFFFFFF, true, 1.5, 1.5, 0xFF3f3f3f);
-    end
-end
-
--------------------------------------------------------------------
-
----Creates a crown threshold string.
----@param size number
----@param smallBorder number
----@param bigBorder number
----@param kingBorder number
----@param steps number
----@return string sizeString The size string in the format |----⦿--|---|
-function Drawing.GetCrownThresholdString(size, smallBorder, bigBorder, kingBorder, steps)
-	local crownString = "";
-
-    local normalizedSize = (size - smallBorder) / (kingBorder - smallBorder);
-    normalizedSize = math.min(math.max(normalizedSize, 0.0), 1.0);
-
-    local normalized_big_size = (bigBorder - smallBorder) / (kingBorder - smallBorder);
-    normalized_big_size = math.min(math.max(normalized_big_size, 0.0), 1.0);
-
-    local size_index = math.max(math.floor(normalizedSize * steps), 1);
-    local bigIndex = math.max(math.floor(normalized_big_size * steps), 1);
-
-    crownString = crownString .. string.format("%.0f ", smallBorder * 100);
-
-    local sizeString = "   ";
-
-    -- todo: replace crowns with default font icons so it can be displayed using: draw.text()
-
-    for i = 1, steps do
-        if i == size_index then
-            sizeString = sizeString .. string.format("%.0f", size * 100);
-            -- king crown
-            if normalizedSize == 1.0 then
-                crownString = crownString .. "G"; --"👑";
-                -- small crown
-            elseif normalizedSize == 0.0 then
-                crownString = crownString .. "M"; --"♔";
-                -- big crown
-            elseif normalizedSize >= normalized_big_size then
-                crownString = crownString .. "S"; --"♛";
-                -- no crown
-            else
-                crownString = crownString .. "⦿";
-            end
-        elseif i == bigIndex then
-            crownString = crownString .. "|"; -- "┼";
-        elseif i == 1 then
-            crownString = crownString .. "|"; --"├";
-        elseif i == steps then
-            crownString = crownString .. "|"; -- "┤";
-        else
-            crownString = crownString .. "-"; -- "─";
-        end
-
-        if i < size_index then
-            sizeString = sizeString .. " ";
-        end
-    end
-
-    crownString = sizeString .. "\n" .. crownString .. string.format(" %.0f", kingBorder * 100);
-
-	return crownString;
-end
-
--------------------------------------------------------------------
-
----Draws the monster details as text in an imgui window.
----@param monster table
-function Drawing.DrawMonsterDetailsText(monster)
-    local header_string = monster.name;
-
-    local crown_string = nil;
-
-    if monster.isSmall then
-        crown_string = "Mini";
-    elseif monster.isKing then
-        crown_string = "Gold";
-    elseif monster.isBig then
-        crown_string = "Silver";
-    end
-
-    if crown_string ~= nil then
-        local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
-        if (sizeInfo and sizeInfo.crownNeeded) and Settings.current.sizeDetails.showHunterRecordIcons then
-            header_string = header_string .. ": Crown chance [" .. crown_string .. "]";
-        else
-            header_string = header_string .. ": [" .. crown_string .. "]";
-        end
-    end
-
-    if imgui.collapsing_header(header_string) then
-        imgui.text(string.format("Size: %.0f", monster.size * 100));
-        imgui.push_font(imguiFont);
-        imgui.text(Drawing.GetCrownThresholdString(monster.size, monster.small_border, monster.big_border, monster.king_border, 20));
-        imgui.pop_font();
-        if crown_string ~= nil then
-            imgui.text("Crown: " .. crown_string);
-        end
+        Drawing.DrawText("Size: " .. string.format("%.0f", monster.size * 100), posx, posy,
+            SizeGraphWidget.AnimData.textColor, true, 1.5, 1.5,
+            SizeGraphWidget.AnimData.textShadowColor);
     end
 end
 
@@ -513,21 +644,35 @@ end
 ---@param ARGBColor integer|nil
 ---@return integer ABGRColor The color in the format ABGR
 function Drawing.ARGBtoABGR(ARGBColor)
-	local a = (ARGBColor >> 24) & 0xFF;
-	local r = (ARGBColor >> 16) & 0xFF;
-	local g = (ARGBColor >> 8) & 0xFF;
-	local b = ARGBColor & 0xFF;
+    local a = (ARGBColor >> 24) & 0xFF;
+    local r = (ARGBColor >> 16) & 0xFF;
+    local g = (ARGBColor >> 8) & 0xFF;
+    local b = ARGBColor & 0xFF;
 
-	local ABGRColor = 0x1000000 * a + 0x10000 * b + 0x100 * g + r;
+    local ABGRColor = 0x1000000 * a + 0x10000 * b + 0x100 * g + r;
 
-	return ABGRColor;
+    return ABGRColor;
 end
 
 -------------------------------------------------------------------
 
 ---Initializes the Drawing module
 function Drawing.InitModule()
-    imguiFont = imgui.load_font("NotoSansKR-Bold.otf", Settings.current.text.textSize, { 0x1, 0xFFFF, 0 });
+    --imguiFont = imgui.load_font("NotoSansKR-Bold.otf", Settings.current.text.textSize, { 0x1, 0xFFFF, 0 });
+    Drawing.Init();
+
+    -- bind game mode event
+    Quests.onGameStatusChanged:add(Callbacks.OnGameStatusChanged)
+
+    -- bind monster add event
+    Monsters.onMonsterAdded:add(function(monster)
+        monstersToAdd[#monstersToAdd + 1] = monster;
+    end);
+
+    -- bind monster remove event
+    Monsters.onMonsterRemoved:add(function(monster)
+        monstersToRemove[#monstersToRemove + 1] = monster;
+    end);
 end
 
 -------------------------------------------------------------------

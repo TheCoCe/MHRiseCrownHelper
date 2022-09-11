@@ -3,18 +3,25 @@ local Singletons    = require("MHR_CrownHelper.Singletons");
 local Quests        = require("MHR_CrownHelper.Quests");
 local Monsters      = require("MHR_CrownHelper.Monsters");
 local Drawing       = require("MHR_CrownHelper.Drawing");
---local Time = require("MHR_CrownHelper.Time");
+local Time = require("MHR_CrownHelper.Time");
 local Settings      = require("MHR_CrownHelper.Settings");
 local SettingsMenu  = require("MHR_CrownHelper.SettingsMenu");
+local NativeSettingsMenu = require("MHR_CrownHelper.NativeSettingsMenu");
 local Utils         = require("MHR_CrownHelper.Utils");
 local CrownTracker  = require("MHR_CrownHelper.CrownTracker");
 
 Settings.InitModule();
+NativeSettingsMenu.InitModule();
 CrownHelper.initialized = false;
 
 -- TODO: List:
--- update readme to include proper credits
 -- fix non d2d sizeGraph drawing
+-- add icon when the record is already registered but better than the previously registered one
+-- move all monster drawing stuff to respective classes
+
+-- New:
+-- added native settings menu support via OptionsMenu mod
+-- added animations to sizeGraph
 
 -------------------------------------------------------------------
 
@@ -38,18 +45,22 @@ end
 -------------------------------------------------------------------
 
 function CrownHelper.OnFrame()
+    -- frame time currently unused -> no need to tick
+    Time.Tick();
+    
     -- init
     if not CrownHelper.initialitzed then
         CrownHelper.HandleInit();
-    -- player ingame
+        -- player ingame
     else
         -- player in village
         if Quests.gameStatus == 1 then
             CrownTracker.DrawCrownTracker();
         end
-
+        
         -- player on quest
         if Quests.gameStatus == 2 then
+            Monsters.Update(Time.timeDelta);
             -- draw size info
             if not d2d and Settings.current.sizeDetails.showSizeDetails then
                 Monsters.IterateMonsters(Drawing.DrawMonsterDetails);
@@ -63,25 +74,15 @@ end
 -------------------------------------------------------------------
 
 function CrownHelper.DrawD2D()
-    -- player in village
-    if Quests.gameStatus < 2 then
-    -- player on quests
-    elseif Quests.gameStatus == 2 then
-        -- iterate over all monsters and call DrawMonsterCrown for each one
-        if Settings.current.crownIcons.showCrownIcons then
-            Monsters.IterateMonsters(Drawing.DrawMonsterCrown);
-        end
-        if Settings.current.sizeDetails.showSizeDetails then
-            Monsters.IterateMonsters(Drawing.DrawMonsterDetails);
-        end
-    end
+    Time.D2DTick();
+    Drawing.Update(Time.timeDeltaD2D);
 end
 
 -------------------------------------------------------------------
 
 function CrownHelper.InitD2D()
     -- register fonts and stuff here
-    Drawing.Init();
+    Drawing.InitModule();
 end
 
 -------------------------------------------------------------------

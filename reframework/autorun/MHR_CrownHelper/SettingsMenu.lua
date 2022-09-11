@@ -84,6 +84,9 @@ function SettingsMenu.Draw()
         changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Draw size graph", Settings.current.sizeDetails.showSizeGraph);
         settingsChanged = settingsChanged or changed;
 
+        changed, Settings.current.sizeDetails.autoHideAfter = imgui.drag_float("Auto hide seconds", Settings.current.sizeDetails.autoHideAfter, 0.1, 0, 3600, "%.1f");
+        settingsChanged = settingsChanged or changed;
+
         imgui.new_line();
 
         imgui.tree_pop();

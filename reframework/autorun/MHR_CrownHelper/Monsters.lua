@@ -2,6 +2,8 @@ local Monsters = {};
 local Singletons = require("MHR_CrownHelper.Singletons");
 local Quests = require("MHR_CrownHelper.Quests");
 local Utils      = require("MHR_CrownHelper.Utils");
+local table_helpers = require("MHR_CrownHelper.table_helpers")
+local Event         = require("MHR_CrownHelper.Event")
 
 ---@class EmType
 ---@class Enemy
@@ -41,8 +43,16 @@ local recordIsEnemySmallCrownMethod = recordManagerTypeDef:get_method("isEnemySm
 local recordIsEnemyBigCrownMethod = recordManagerTypeDef:get_method("isEnemyBigCrown(snow.enemy.EnemyDef.EnemyTypeIndex)");
 local recordIsEnemyKingCrownMethod = recordManagerTypeDef:get_method("isEnemyKingCrown(snow.enemy.EnemyDef.EnemyTypeIndex)");
 local recordIsCrownEnableMethod = recordManagerTypeDef:get_method("isCrownEnable(snow.enemy.EnemyDef.EnemyTypeIndex)");
--- guild card
 
+
+-- Gets the current amount of boss enemies in the map.
+local getBossEnemyCountMethod = enemyManagerTypeDef:get_method("getBossEnemyCount");
+-- Gets the boss enemy from an index.
+local getBossEnemyMethod = enemyManagerTypeDef:get_method("getBossEnemy");
+
+-- this represents monsters that are currently on the map
+local currentMapMonsters = {};
+local orderedMapMonsters = {};
 
 -- key: enemy, value: bool monster recorded
 local recordedMonsters = {};
@@ -52,6 +62,12 @@ local knownBigMonsters = {};
 Monsters.monsters = {};
 -- All available monster types k[emType], v[table]
 Monsters.monsterDefinitions = {};
+
+local currentInterval = 0.0;
+Monsters.UpdateInterval = 5.0;
+
+Monsters.onMonsterAdded = Event.New();
+Monsters.onMonsterRemoved = Event.New();
 
 -------------------------------------------------------------------
 
@@ -66,6 +82,62 @@ function Monsters.OnGameStatusChangedCallback()
         -- Clear the outdated monster list when on a new quest
         Monsters.InitList();
     end
+end
+
+-------------------------------------------------------------------
+
+function Monsters.Update(deltaTime)
+    if currentInterval > 0 then
+        currentInterval = currentInterval - deltaTime;
+        return;
+    end
+    currentInterval = Monsters.UpdateInterval;
+    Utils.logDebug("Update");
+
+    local tempMonsters = {};
+    orderedMapMonsters = {};
+
+    -- get current boss enemy count on the map
+    local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
+    Utils.logDebug("Count: " .. enemyCount);
+    if enemyCount == nil then
+        return;
+    end
+
+    -- iterate over all enemies
+    for i = 0, enemyCount - 1, 1 do
+        -- get the enemy
+        local enemy = getBossEnemyMethod(Singletons.EnemyManager, i);
+        if enemy == nil then
+            goto continue;
+        end
+        -- get the monster from the enemy
+        local monster = Monsters.GetMonster(enemy);
+
+        if monster ~= nil then
+            tempMonsters[enemy] = monster;
+
+            if currentMapMonsters[enemy] == nil then
+                -- temp contains, current doesn't -> new monster
+                Monsters.onMonsterAdded(monster);
+            end
+
+            -- Save this to an array because we need the order
+            orderedMapMonsters[#orderedMapMonsters+1] = monster;
+        end
+
+        ::continue::
+    end
+
+    -- check the other way to find monsters that were registered but are no longer on the map
+    for enemy, monster in pairs(currentMapMonsters) do
+        if tempMonsters[enemy] == nil then
+            -- temp doesnt contain, current contains -> monster removed
+            Monsters.onMonsterRemoved(monster);
+        end
+    end
+
+    currentMapMonsters = tempMonsters;
 end
 
 -------------------------------------------------------------------
@@ -171,36 +243,37 @@ end
 
 -------------------------------------------------------------------
 
--- Gets the current amount of boss enemies in the map.
-local getBossEnemyCountMethod = enemyManagerTypeDef:get_method("getBossEnemyCount");
--- Gets the boss enemy from an index.
-local getBossEnemyMethod = enemyManagerTypeDef:get_method("getBossEnemy");
-
----Iterates all known monsters and calls  the provided function with it and its index.
+---Iterates all known monsters and calls the provided function with it and its index.
 ---@param f function The function to call for each monster f(enemy, index)
 function Monsters.IterateMonsters(f)
     -- get current boss enemy count on the map
-    local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
-    if enemyCount == nil then
-        return;
-    end
+    --[[
 
-    -- iterate over all enemies
-    for i = 0, enemyCount - 1, 1 do
-        -- get the enemy
-        local enemy = getBossEnemyMethod(Singletons.EnemyManager, i);
-        if enemy == nil then
-            goto continue;
+        local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
+        if enemyCount == nil then
+            return;
         end
+        
+        -- iterate over all enemies
+        for i = 0, enemyCount - 1, 1 do
+            -- get the enemy
+            local enemy = getBossEnemyMethod(Singletons.EnemyManager, i);
+            if enemy == nil then
+                goto continue;
+            end
         -- get the monster from the enemy
         local monster = Monsters.GetMonster(enemy);
-
+        
         if monster ~= nil then
             -- call delegate with the monster and it's corresponding index
             f(monster, i);
         end
-
+        
         ::continue::
+    end
+    ]]
+    for i = 1, #orderedMapMonsters, 1 do
+        f(orderedMapMonsters[i], i - 1);
     end
 end
 

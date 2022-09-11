@@ -31,6 +31,7 @@ function Settings.Init()
             showSizeDetails = true,
             showHunterRecordIcons = true,
             showSizeGraph = true,
+            autoHideAfter = 20,
 
             sizeDetailsOffset = {
                 x = 0,
@@ -73,6 +74,14 @@ function Settings.Save()
     else
         log.error("[MHR CrownHelper] Failed to save settings");
     end
+end
+
+-------------------------------------------------------------------
+
+--Resets the settings to default
+function Settings.ResetToDefault()
+    Settings.current = Settings.default;
+    Settings.Save();
 end
 
 -------------------------------------------------------------------
