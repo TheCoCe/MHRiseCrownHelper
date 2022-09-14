@@ -1,7 +1,7 @@
 local Monsters = {};
-local Singletons = require("MHR_CrownHelper.Singletons");
-local Quests = require("MHR_CrownHelper.Quests");
-local Utils      = require("MHR_CrownHelper.Utils");
+local Singletons    = require("MHR_CrownHelper.Singletons");
+local Quests        = require("MHR_CrownHelper.Quests");
+local Utils         = require("MHR_CrownHelper.Utils");
 local table_helpers = require("MHR_CrownHelper.table_helpers")
 local Event         = require("MHR_CrownHelper.Event")
 
@@ -75,6 +75,7 @@ function Monsters.OnGameStatusChangedCallback()
     if Quests.gameStatus == 1 then
         -- Update the size infos when coming back to village
         Monsters.InitSizeInfos();
+        Monsters.InitList();
     end
     
     -- player on quest
@@ -92,14 +93,12 @@ function Monsters.Update(deltaTime)
         return;
     end
     currentInterval = Monsters.UpdateInterval;
-    Utils.logDebug("Update");
 
     local tempMonsters = {};
     orderedMapMonsters = {};
 
     -- get current boss enemy count on the map
     local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
-    Utils.logDebug("Count: " .. enemyCount);
     if enemyCount == nil then
         return;
     end
@@ -246,32 +245,6 @@ end
 ---Iterates all known monsters and calls the provided function with it and its index.
 ---@param f function The function to call for each monster f(enemy, index)
 function Monsters.IterateMonsters(f)
-    -- get current boss enemy count on the map
-    --[[
-
-        local enemyCount = getBossEnemyCountMethod(Singletons.EnemyManager);
-        if enemyCount == nil then
-            return;
-        end
-        
-        -- iterate over all enemies
-        for i = 0, enemyCount - 1, 1 do
-            -- get the enemy
-            local enemy = getBossEnemyMethod(Singletons.EnemyManager, i);
-            if enemy == nil then
-                goto continue;
-            end
-        -- get the monster from the enemy
-        local monster = Monsters.GetMonster(enemy);
-        
-        if monster ~= nil then
-            -- call delegate with the monster and it's corresponding index
-            f(monster, i);
-        end
-        
-        ::continue::
-    end
-    ]]
     for i = 1, #orderedMapMonsters, 1 do
         f(orderedMapMonsters[i], i - 1);
     end
@@ -344,6 +317,10 @@ end
 ---Initializes/empties the monster list.
 function Monsters.InitList()
     Monsters.monsters = {};
+    currentMapMonsters = {};
+    orderedMapMonsters = {};
+    recordedMonsters = {};
+    knownBigMonsters = {};
 end
 
 -------------------------------------------------------------------

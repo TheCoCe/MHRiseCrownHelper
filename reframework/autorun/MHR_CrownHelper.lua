@@ -18,6 +18,7 @@ CrownHelper.initialized = false;
 -- TODO: List:
 -- fix non d2d sizeGraph drawing
 -- add icon when the record is already registered but better than the previously registered one
+-- fix size graph not crrectly showing when a monster leaves and a new one joins while size graph was hidden
 
 -------------------------------------------------------------------
 
@@ -71,7 +72,9 @@ end
 
 function CrownHelper.DrawD2D()
     Time.D2DTick();
-    SizeGraph.Update(Time.timeDeltaD2D);
+    if Quests.gameStatus == 2 then
+        SizeGraph.Update(Time.timeDeltaD2D);
+    end
     Drawing.Update(Time.timeDeltaD2D);
 end
 

@@ -1,5 +1,6 @@
 local SizeGraph = {};
 local SizeGraphWidget = {};
+
 local Animation     = require("MHR_CrownHelper.Animation");
 local Utils         = require("MHR_CrownHelper.Utils")
 local Drawing       = require("MHR_CrownHelper.Drawing")
@@ -21,7 +22,6 @@ local guiTgCameraVisible = false;
 
 local sizeGraphVisible = false;
 local sizeGraphAnimating = false;
-
 local TargetCamVisibleFlag = false;
 
 local SizeGraphMonsterList = {};
@@ -34,10 +34,13 @@ local MonstersToRemove = {};
 ---Target camera gui visibility changed callback
 ---@param vis boolean
 function SizeGraph.OnGuiTgCameraVisibilityChanged(vis)
+    Utils.logDebug("SizeGraph OnGuiTgCameraVisibilityChanged Event");
     if Quests.gameStatus == 2 then
         if vis and not TargetCamVisibleFlag then
             TargetCamVisibleFlag = true;
-            SizeGraph.SizeGraphOpen();
+            if #SizeGraphMonsterList > 0 then
+                SizeGraph.SizeGraphOpen();
+            end
         end
     end
 end
@@ -47,21 +50,21 @@ end
 ---Game status changed callback
 ---@param state number
 function SizeGraph.OnGameStatusChanged(state)
+    Utils.logDebug("SizeGraph onGameStatusChanged Event");
     if state < 2 then
+        -- reset all size graph related stuff
         TargetCamVisibleFlag = false;
+        sizeGraphVisible = false;
+        sizeGraphAnimating = false;
+        guiTgCameraVisible = false;
         SizeGraphMonsterList = {};
         MonstersToRemove = {};
         MonstersToAdd = {};
-        SizeGraphWidget = {};
+        SizeGraphWidgets = {};
+        tgCamGuiComponent = nil;
     elseif state == 2 then
         -- reset tgCamGuiComponent (no longer valid)
         tgCamGuiComponent = nil;
-        -- start delay for size details auto hide
-        if Settings.current.sizeDetails.autoHideAfter > 0 then
-            Animation.Delay(Settings.current.sizeDetails.autoHideAfter, function()
-                SizeGraph.SizeGraphClose();
-            end)
-        end
     end
 end
 
@@ -71,14 +74,19 @@ end
 function SizeGraph.SizeGraphOpen()
     sizeGraphVisible = true;
     sizeGraphAnimating = true;
+    Utils.logDebug("sizeGraphOpening");
 
     local i = 1;
     local showNextItem = function(f)
         if i <= #SizeGraphMonsterList then
             local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
+            
+            Utils.logDebug("Animating monster widget: " .. SizeGraphMonsterList[i].name);
             if not Widget.AnimData.visible then
-                Widget:Show();
+                Utils.logDebug("widget:show ");
+                Widget:show(0.5);
             end
+
             Animation.Delay(0.1, function()
                 i = i + 1;
                 f(f);
@@ -89,6 +97,12 @@ function SizeGraph.SizeGraphOpen()
     end
 
     showNextItem(showNextItem);
+
+    if(Settings.current.sizeDetails.autoHideAfter > 0) then
+        Animation.Delay(Settings.current.sizeDetails.autoHideAfter, function ()
+            SizeGraph.SizeGraphClose();
+        end)
+    end
 end
 
 -------------------------------------------------------------------
@@ -102,7 +116,7 @@ function SizeGraph.SizeGraphClose()
         if i >= 1 then
             local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
             if Widget.AnimData.visible then
-                Widget:Hide();
+                Widget:hide();
             end
             Animation.Delay(0.1, function()
                 i = i - 1;
@@ -122,7 +136,6 @@ end
 ---Update loop
 ---@param deltaTime number
 function SizeGraph.Update(deltaTime)
-
     -- get tgCamera component if current is invalid
     if not tgCamGuiComponent and Singletons.GuiManager then
         local guiHud_tgCam = getTgCameraHudMethod(Singletons.GuiManager);
@@ -143,52 +156,71 @@ function SizeGraph.Update(deltaTime)
         end
     end
 
+    if #MonstersToRemove > 0 then
+        Utils.logDebug("Monsters to remove > 0");
+        if sizeGraphVisible then
+            Utils.logDebug("Size graph visible");
+            if not sizeGraphAnimating then
+                Utils.logDebug("Size graph not animating");
+                for i = 1, #SizeGraphMonsterList, 1 do
+                    if SizeGraphMonsterList[i] == MonstersToRemove[1] then
+                        Utils.logDebug("Monster found index " .. i);
+                        local monster = MonstersToRemove[1];
+                        SizeGraphWidgets[monster]:hide(0.5, function()
+                            table.remove(SizeGraphMonsterList, i);
+                            SizeGraphWidgets[monster] = nil;
+                        end)
+
+                        table.remove(MonstersToRemove, 1);
+                        break;
+                    end
+                end
+            end
+        else
+            Utils.logDebug("Size graph not visible");
+            -- remove
+            for j = #MonstersToRemove, 1, -1 do
+                for i = 1, #SizeGraphMonsterList, 1 do
+                    if SizeGraphMonsterList[i] == MonstersToRemove[j] then
+                        Utils.logDebug("Monster found index " .. i);
+                        SizeGraphWidgets[SizeGraphMonsterList[i]] = nil;
+                        table.remove(SizeGraphMonsterList, i);
+                        table.remove(MonstersToRemove, j);
+                        break;
+                    end
+                end
+            end
+        end
+    end
+
     -- add/remove new monsters to size graph
     if TargetCamVisibleFlag then
         if #MonstersToAdd > 0 then
+            Utils.logDebug("Monsters to add > 0");
             if sizeGraphVisible then
+                Utils.logDebug("sizeGraphVisible == true");
                 if not sizeGraphAnimating then
+                    Utils.logDebug("not sizeGraphAnimating");
                     SizeGraphMonsterList[#SizeGraphMonsterList + 1] = MonstersToAdd[1];
                     table.remove(MonstersToAdd, 1);
                     local monster = SizeGraphMonsterList[#SizeGraphMonsterList];
                     SizeGraphWidgets[monster] = SizeGraphWidget.New();
-                    SizeGraphWidgets[monster]:show(5);
+                    SizeGraphWidgets[monster]:show(0.5);
                 end
             else
-                SizeGraphMonsterList[#SizeGraphMonsterList + 1] = MonstersToAdd[1];
-                table.remove(MonstersToAdd, 1);
-                local monster = SizeGraphMonsterList[#SizeGraphMonsterList];
-                SizeGraphWidgets[monster] = SizeGraphWidget.New();
-
+                Utils.logDebug("sizeGraphVisible == false");
+                Utils.logDebug("#SizeGraphMonsterList: " .. #SizeGraphMonsterList);
+                for i = #MonstersToAdd, 1, -1 do
+                    SizeGraphMonsterList[#SizeGraphMonsterList+1] = MonstersToAdd[i];
+                    Utils.logDebug("monstersToAdd remove index " .. i);
+                    table.remove(MonstersToAdd, i);
+                    Utils.logDebug("get monster");
+                    local monster = SizeGraphMonsterList[#SizeGraphMonsterList];
+                    Utils.logDebug("Create size graph widget");
+                    SizeGraphWidgets[monster] = SizeGraphWidget.New();
+                end
+                Utils.logDebug("Open the size graph");
                 SizeGraph.SizeGraphOpen();
-            end
-        end
-
-        if #MonstersToRemove > 0 then
-            if sizeGraphVisible then
-                if not sizeGraphAnimating then
-                    for i = 1, #SizeGraphMonsterList, 1 do
-                        if SizeGraphMonsterList[i] == MonstersToRemove[1] then
-                            local monster = MonstersToRemove[1];
-                            SizeGraphWidgets[monster]:hide(5, function()
-                                table.remove(SizeGraphMonsterList, i);
-                                SizeGraphWidgets[monster] = nil;
-                            end)
-
-                            table.remove(MonstersToRemove, 1);
-                            break;
-                        end
-                    end
-                end
-            else
-                -- remove
-                for i = 1, #SizeGraphMonsterList, 1 do
-                    if SizeGraphMonsterList[i] == MonstersToRemove[1] then
-                        table.remove(SizeGraphMonsterList, i);
-                        table.remove(MonstersToRemove, i);
-                        break;
-                    end
-                end
             end
         end
     end
@@ -241,15 +273,6 @@ function SizeGraph.DrawMonsterCrown(monster, index)
 
         posx = posx + Settings.current.crownIcons.crownIconOffset.x;
         posy = posy + Settings.current.crownIcons.crownIconOffset.y;
-
-        --[[
-            local image = "miniCrown";
-            if monster.isKing then
-                image = "kingCrown";
-            elseif monster.isBig then
-                image = "bigCrown";
-            end
-        ]]
 
         local image = monster.isKing and "kingCrown" or (monster.isBig and "bigCrown" or "miniCrown");
         Drawing.DrawImage(Drawing.imageResources[image], posx, posy, size, size);
@@ -390,7 +413,7 @@ function SizeGraphWidget.HideAnim(s, hideTime, callback)
     end, "easeOutQuad");
     
     Animation.Delay(hideTime, function ()
-        s.AnimData.visible = true;
+        s.AnimData.visible = false;
         callback();
     end);
 end
@@ -406,17 +429,16 @@ function SizeGraphWidget.Draw(s, posx, posy, sizex, sizey, lineWidth, monsterSiz
     local normalizedBigSize = (bigBorder - smallBorder) / (kingBorder - smallBorder);
     normalizedBigSize = math.min(math.max(normalizedBigSize, 0.0), 1.0);
 
-    -- Draw:        90
     local sizeString = string.format("%.0f", monsterSize * 100);
     local sizeWidth, sizeHeight = Drawing.MeasureText(sizeString);
 
     local minString = string.format("%.0f", smallBorder * 100);
-    local minWidth, minHeight = Drawing.MeasureText(sizeString);
+    local minWidth, minHeight = Drawing.MeasureText(minString);
 
     local maxString = string.format("%.0f", kingBorder * 100);
-    local maxWidth, _ = Drawing.MeasureText(sizeString);
+    local maxWidth, _ = Drawing.MeasureText(maxString);
 
-    local textPadMult = 2;
+    local textPadMult = 1.5;
     local heightPadMult = 1.5;
 
     local scaledSizex = sizex - (minWidth * textPadMult + maxWidth * textPadMult);
@@ -465,6 +487,7 @@ end
 ---Creates a new size graph
 ---@return table SizeGraph The newly created size graph
 function SizeGraphWidget.New()
+    Utils.logDebug("new widget");
     local table = {
         AnimData = {
             textColor = 0x00FFFFFF;
@@ -478,6 +501,7 @@ function SizeGraphWidget.New()
         hide = SizeGraphWidget.HideAnim,
         draw = SizeGraphWidget.Draw
     };
+    Utils.logDebug("table created");
 
     return table;
 end

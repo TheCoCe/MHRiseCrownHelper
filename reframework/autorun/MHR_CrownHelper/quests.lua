@@ -1,7 +1,7 @@
 local Quests = {};
-local Singletons = require("MHR_CrownHelper.Singletons");
-local Event = require("MHR_CrownHelper.Event");
-local Utils = require("MHR_CrownHelper.Utils");
+local Singletons    = require("MHR_CrownHelper.Singletons");
+local Event         = require("MHR_CrownHelper.Event");
+local Utils         = require("MHR_CrownHelper.Utils");
 
 Quests.gameStatus = -1;
 

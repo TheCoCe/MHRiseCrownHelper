@@ -1,7 +1,7 @@
 local SettingsMenu = {};
 
-local Settings = require("MHR_CrownHelper.Settings");
-local CrownTracker = require("MHR_CrownHelper.CrownTracker");
+local Settings      = require("MHR_CrownHelper.Settings");
+local CrownTracker  = require("MHR_CrownHelper.CrownTracker");
 
 SettingsMenu.windowPosition = Vector2f.new(400, 200);
 SettingsMenu.windowPivot = Vector2f.new(0, 0);
