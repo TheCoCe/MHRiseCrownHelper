@@ -22,10 +22,11 @@ You can also use the Custom In-Game Mod Menu Mod to get a integrated Mod setting
 1. [Custom In-Game Mod Menu API](https://www.nexusmods.com/monsterhunterrise/mods/1292)
 
 ## Installation
-1. Make sure you have REFramework installed [REFramework](https://github.com/praydog/REFramework) 
-2. Download the mod (via this repo for now)
-3. Move the `reframework` directory into your `...\steamapps\common\MonsterHunterRise\` directory
-4. Start the game
+1. Make sure you have REFramework installed [REFramework](https://github.com/praydog/REFramework)
+2. Make sure you have [Direct2D for REFramework](https://www.nexusmods.com/monsterhunterrise/mods/134) installed
+3. Download the latest release of the mod
+4. Move the `reframework` directory into your `...\steamapps\common\MonsterHunterRise\` directory
+5. Start the game
 
 ## Credits
 - [praydog](https://github.com/praydog) - [REFramework](https://github.com/praydog/REFramework) Developer
