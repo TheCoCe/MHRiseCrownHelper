@@ -10,6 +10,7 @@ local NativeSettingsMenu    = require("MHR_CrownHelper.NativeSettingsMenu");
 local Utils                 = require("MHR_CrownHelper.Utils");
 local CrownTracker          = require("MHR_CrownHelper.CrownTracker");
 local SizeGraph             = require("MHR_CrownHelper.SizeGraph");
+local Notifications         = require("MHR_CrownHelper.Notifications")
 
 Settings.InitModule();
 NativeSettingsMenu.InitModule();
@@ -18,7 +19,9 @@ CrownHelper.initialized = false;
 -- TODO: List:
 -- fix non d2d sizeGraph drawing
 -- add icon when the record is already registered but better than the previously registered one
--- fix size graph not crrectly showing when a monster leaves and a new one joins while size graph was hidden
+-- increase crown icon resolution
+-- try different backgrounds for notifications
+-- add some background to the size graph?
 
 -------------------------------------------------------------------
 
@@ -35,6 +38,7 @@ function CrownHelper.HandleInit()
             Monsters.InitModule();
             SizeGraph.InitModule();
             CrownHelper.initialitzed = true;
+            Utils.logInfo("All modules initialized");
         end
     end
 end
@@ -76,6 +80,8 @@ function CrownHelper.DrawD2D()
         SizeGraph.Update(Time.timeDeltaD2D);
     end
     Drawing.Update(Time.timeDeltaD2D);
+
+    Notifications.Update();
 end
 
 -------------------------------------------------------------------
@@ -109,12 +115,29 @@ end
 
 -------------------------------------------------------------------
 
-if d2d ~= nil then
-    -- init d2d
-    d2d.register(CrownHelper.InitD2D, CrownHelper.DrawD2D);
+function CrownHelper.CheckModuleAvailability()
+    if Utils.IsModuleAvailable("coroutine") and d2d then
+        if not Utils.IsModuleAvailable("ModOptionsMenu.ModMenuApi") then
+            Utils.logInfo("Mod Options Menu not found. Using default Settings menu.");
+        end
+
+        return true;
+    end
+
+    Utils.logError("REFramework outdated or REFramework Direct2D missing! Please make sure to download the latest versions for the mod to work!");
+    return false;
 end
 
--- init update loop
-re.on_frame(CrownHelper.OnFrame);
+-------------------------------------------------------------------
+
+if CrownHelper.CheckModuleAvailability() then
+    -- init d2d
+    d2d.register(CrownHelper.InitD2D, CrownHelper.DrawD2D);
+    
+    -- init update loop
+    re.on_frame(CrownHelper.OnFrame);
+end
+
+-------------------------------------------------------------------
 
 return CrownHelper;

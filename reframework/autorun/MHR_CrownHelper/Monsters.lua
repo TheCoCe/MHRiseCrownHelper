@@ -4,6 +4,9 @@ local Quests        = require("MHR_CrownHelper.Quests");
 local Utils         = require("MHR_CrownHelper.Utils");
 local table_helpers = require("MHR_CrownHelper.table_helpers")
 local Event         = require("MHR_CrownHelper.Event")
+local Notifications = require("MHR_CrownHelper.Notifications")
+local Drawing       = require("MHR_CrownHelper.Drawing")
+local Settings      = require("MHR_CrownHelper.Settings")
 
 ---@class EmType
 ---@class Enemy
@@ -213,6 +216,14 @@ function Monsters.NewMonster(enemy)
             monster.isSmall = recordIsSmallCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
             monster.isBig = recordIsBigCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
             monster.isKing = recordIsKingCrownMethod(Singletons.HunterRecordManager, emType, enemyTypeIndex, size);
+        end
+
+        if (monster.isSmall or (monster.isBig and not Settings.current.notifications.ignoreSilverCrowns) or monster.isKing) and 
+            (sizeInfo.crownNeeded or not Settings.current.notifications.ignoreObtainedCrowns) then
+            local crownString = monster.isSmall and "Mini" or (monster.isKing and "Gold" or (monster.isBig and "Silver"));
+            crownString = crownString .. " Crown " .. monster.name .. " spotted!"
+            local icon = monster.isSmall and "miniCrown" or (monster.isKing and "kingCrown" or (monster.isBig and "bigCrown"));
+            Notifications.AddNotification(crownString, Drawing.imageResources[icon]);
         end
     end
 

@@ -7,6 +7,7 @@ local CrownTracker = require("MHR_CrownHelper.CrownTracker")
 local ModMenu;
 local ShowCrownIconAdvanced = false;
 local ShowSizeAdvanced = false;
+local ShowNotificationsAdvanced = false;
 local ShowString = "Show";
 local HideString = "Hide";
 
@@ -75,13 +76,10 @@ function NativeSettingsMenu.DrawMenu()
 
     OptionsMenu.Header("Crown/Record Icons");
 
-    changed, Settings.current.crownIcons.showCrownIcons = OptionsMenu.CheckBox("Show crown icons", Settings.current.crownIcons.showCrownIcons);
+    changed, Settings.current.crownIcons.showCrownIcons = OptionsMenu.CheckBox("Show crown icons", Settings.current.crownIcons.showCrownIcons, "Enables or disables the crown icons displayed on top of the monster icons on a quest");
     settingsChanged = settingsChanged or changed;
     
-    changed, Settings.current.crownIcons.showHunterRecordIcons = OptionsMenu.CheckBox("Show record icon", Settings.current.crownIcons.showHunterRecordIcons);
-    settingsChanged = settingsChanged or changed;
-
-    changed, Settings.current.crownIcons.hunterRecordIconSizeMultiplier = OptionsMenu.FloatSlider("Hunter Record Icon Size", Settings.current.crownIcons.hunterRecordIconSizeMultiplier, 0, 10);
+    changed, Settings.current.crownIcons.showHunterRecordIcons = OptionsMenu.CheckBox("Show record icon", Settings.current.crownIcons.showHunterRecordIcons, "Display a book icon when the crown record is missing from your hunter records");
     settingsChanged = settingsChanged or changed;
 
     if OptionsMenu.Button("Advanced Crown Settings", (ShowCrownIconAdvanced and HideString or ShowString)) then
@@ -95,7 +93,7 @@ function NativeSettingsMenu.DrawMenu()
         OptionsMenu.Label("Crown Icons:");
         OptionsMenu.IncreaseIndent();
         
-        changed, Settings.current.crownIcons.crownIconSizeMultiplier = OptionsMenu.FloatSlider("Crown Icon Size", Settings.current.crownIcons.crownIconSizeMultiplier, 0, 10);
+        changed, Settings.current.crownIcons.crownIconSizeMultiplier = OptionsMenu.FloatSlider("Crown Icon Size", Settings.current.crownIcons.crownIconSizeMultiplier, 0, 10, "Crown icon size multiplier");
         settingsChanged = settingsChanged or changed;
         
         changed, Settings.current.crownIcons.crownIconOffset.x = OptionsMenu.Slider("Crown Icon X Offset", Settings.current.crownIcons.crownIconOffset.x, -1000, 1000);
@@ -108,7 +106,7 @@ function NativeSettingsMenu.DrawMenu()
         OptionsMenu.Label("Record Icons:");
         OptionsMenu.IncreaseIndent();
         
-        changed, Settings.current.crownIcons.hunterRecordIconSizeMultiplier = OptionsMenu.FloatSlider("Record Icon Size", Settings.current.crownIcons.hunterRecordIconSizeMultiplier, 0, 10);
+        changed, Settings.current.crownIcons.hunterRecordIconSizeMultiplier = OptionsMenu.FloatSlider("Record Icon Size", Settings.current.crownIcons.hunterRecordIconSizeMultiplier, 0, 10, "Record icon size multiplier");
         settingsChanged = settingsChanged or changed;
         
         changed, Settings.current.crownIcons.hunterRecordIconOffset.x = OptionsMenu.Slider("Record Icon X Offset", Settings.current.crownIcons.hunterRecordIconOffset.x, -1000, 1000);
@@ -125,16 +123,16 @@ function NativeSettingsMenu.DrawMenu()
 
     OptionsMenu.Header("Size Details");
 
-    changed, Settings.current.sizeDetails.showSizeDetails = OptionsMenu.CheckBox("Show size details", Settings.current.sizeDetails.showSizeDetails);
+    changed, Settings.current.sizeDetails.showSizeDetails = OptionsMenu.CheckBox("Show size details", Settings.current.sizeDetails.showSizeDetails, "Enables of disables the size details");
     settingsChanged = settingsChanged or changed;
 
-    changed, Settings.current.sizeDetails.showHunterRecordIcons = OptionsMenu.CheckBox("Show hunter record icon", Settings.current.sizeDetails.showHunterRecordIcons);
+    changed, Settings.current.sizeDetails.showHunterRecordIcons = OptionsMenu.CheckBox("Show hunter record icon", Settings.current.sizeDetails.showHunterRecordIcons, "Display a small icon when the crown is missing from your hunter records");
     settingsChanged = settingsChanged or changed;
 
-    changed, Settings.current.sizeDetails.showSizeGraph = OptionsMenu.CheckBox("Draw size graph", Settings.current.sizeDetails.showSizeGraph);
+    changed, Settings.current.sizeDetails.showSizeGraph = OptionsMenu.CheckBox("Draw size graph", Settings.current.sizeDetails.showSizeGraph, "Draw a detailed size graph displaying the monsters size in a more detailed way");
     settingsChanged = settingsChanged or changed;
 
-    changed, Settings.current.sizeDetails.autoHideAfter = OptionsMenu.Slider("Auto hide after", Settings.current.sizeDetails.autoHideAfter, 0, 240);
+    changed, Settings.current.sizeDetails.autoHideAfter = OptionsMenu.Slider("Auto hide after", Settings.current.sizeDetails.autoHideAfter, 0, 240, "Hide the size details after this time in seconds");
     settingsChanged = settingsChanged or changed;
 
     if OptionsMenu.Button("Advanced Crown Settings", (ShowSizeAdvanced and HideString or ShowString)) then
@@ -155,6 +153,35 @@ function NativeSettingsMenu.DrawMenu()
         OptionsMenu.DecreaseIndent();
     end
 
+     -------------------- Notifications --------------------
+
+    OptionsMenu.Header("Crown Notifications");
+
+    changed, Settings.current.notifications.ignoreSilverCrowns = OptionsMenu.CheckBox("Ignore silver crowns", Settings.current.notifications.ignoreSilverCrowns, "Do not show notifications for silver crowns");
+    settingsChanged = settingsChanged or changed;
+
+    changed, Settings.current.notifications.ignoreObtainedCrowns = OptionsMenu.CheckBox("Ignore obtained crowns", Settings.current.notifications.ignoreObtainedCrowns, "Do not show notifications for crowns already in the hunter record");
+    settingsChanged = settingsChanged or changed;
+
+    changed, Settings.current.notifications.notificionDisplayTime = OptionsMenu.Slider("Display time", Settings.current.notifications.notificionDisplayTime, 0, 60, "Display time of a notifications");
+    settingsChanged = settingsChanged or changed;
+
+    if OptionsMenu.Button("Advanced Notification Settings", (ShowNotificationsAdvanced and HideString or ShowString)) then
+        ShowNotificationsAdvanced = not ShowNotificationsAdvanced;
+    end
+
+    if ShowNotificationsAdvanced then
+        OptionsMenu.IncreaseIndent();
+
+        changed, Settings.current.notifications.notificationsOffset.x = OptionsMenu.Slider("Notifications X Offset", Settings.current.notifications.notificationsOffset.x, -1000, 1000);
+        settingsChanged = settingsChanged or changed;
+        
+        changed, Settings.current.notifications.notificationsOffset.y = OptionsMenu.Slider("Notifications Y Offset", Settings.current.notifications.notificationsOffset.y, -1000, 1000);
+        settingsChanged = settingsChanged or changed;
+
+        OptionsMenu.DecreaseIndent();
+    end
+
     -------------------- Crown Tracker --------------------
 
     OptionsMenu.Header("Crown Tracker");
@@ -165,16 +192,16 @@ function NativeSettingsMenu.DrawMenu()
         end
     end
 
-    changed, Settings.current.crownTracker.showCrownTracker = OptionsMenu.CheckBox("Show crown tracker", Settings.current.crownTracker.showCrownTracker);
+    changed, Settings.current.crownTracker.showCrownTracker = OptionsMenu.CheckBox("Show crown tracker", Settings.current.crownTracker.showCrownTracker, "Display the corwn tracker window in the village");
     settingsChanged = settingsChanged or changed;
 
-    changed, Settings.current.crownTracker.hideComplete = OptionsMenu.CheckBox("Hide completed monsters", Settings.current.crownTracker.hideComplete);
+    changed, Settings.current.crownTracker.hideComplete = OptionsMenu.CheckBox("Hide completed monsters", Settings.current.crownTracker.hideComplete, "Hide monsters from the crown tracker when all crowns are obtained");
     settingsChanged = settingsChanged or changed;
 
-    changed, Settings.current.crownTracker.showCurrentRecords = OptionsMenu.CheckBox("Show current records", Settings.current.crownTracker.showCurrentRecords);
+    changed, Settings.current.crownTracker.showCurrentRecords = OptionsMenu.CheckBox("Show current records", Settings.current.crownTracker.showCurrentRecords, "Display the current record sizes of the monsters");
     settingsChanged = settingsChanged or changed;
     
-    changed, Settings.current.crownTracker.showSizeBorders = OptionsMenu.CheckBox("Show size borders", Settings.current.crownTracker.showSizeBorders);
+    changed, Settings.current.crownTracker.showSizeBorders = OptionsMenu.CheckBox("Show size borders", Settings.current.crownTracker.showSizeBorders, "Display the size borders needed for a monster crown");
     settingsChanged = settingsChanged or changed;
 
     if OptionsMenu.Button("Reset window position/size", "Click to reset", false) then

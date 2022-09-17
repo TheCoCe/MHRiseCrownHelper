@@ -39,6 +39,16 @@ function Settings.Init()
             }
         },
 
+        notifications = {
+            ignoreSilverCrowns = false,
+            ignoreObtainedCrowns = false,
+            notificionDisplayTime = 5,
+            notificationsOffset = {
+                x = 0,
+                y = 0,
+            }
+        },
+
         crownTracker = {
             showCrownTracker = true,
             hideComplete = true,

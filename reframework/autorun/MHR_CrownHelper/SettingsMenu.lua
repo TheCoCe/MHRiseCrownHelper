@@ -2,6 +2,7 @@ local SettingsMenu = {};
 
 local Settings      = require("MHR_CrownHelper.Settings");
 local CrownTracker  = require("MHR_CrownHelper.CrownTracker");
+local Notifications = require("MHR_CrownHelper.Notifications")
 
 SettingsMenu.windowPosition = Vector2f.new(400, 200);
 SettingsMenu.windowPivot = Vector2f.new(0, 0);
@@ -25,8 +26,6 @@ function SettingsMenu.Draw()
 
     local settingsChanged = false;
     local changed = false;
-
-    -- todo: differentiate between d2d and non d2d settings
 
     if imgui.tree_node("Crown Icons") then
         changed, Settings.current.crownIcons.showCrownIcons = imgui.checkbox("Show crown icons", Settings.current.crownIcons.showCrownIcons);
@@ -88,6 +87,31 @@ function SettingsMenu.Draw()
         settingsChanged = settingsChanged or changed;
 
         imgui.new_line();
+
+        imgui.tree_pop();
+    end
+
+    if imgui.tree_node("Crown notifications") then
+        changed, Settings.current.notifications.ignoreSilverCrowns = imgui.checkbox("Ignore silver crowns", Settings.current.notifications.ignoreSilverCrowns);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.notifications.ignoreObtainedCrowns = imgui.checkbox("Ignore obtained crowns", Settings.current.notifications.ignoreObtainedCrowns);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.notifications.notificionDisplayTime = imgui.drag_float("Display time", Settings.current.notifications.notificionDisplayTime, 0.1, 0, 60, "%.1f");
+        settingsChanged = settingsChanged or changed;
+
+        local notificationsOffset = Vector2f.new(Settings.current.notifications.notificationsOffset.x, Settings.current.notifications.notificationsOffset.y);
+        changed, notificationsOffset = imgui.drag_float2("Offset", notificationsOffset, 1, 0, 0, "%.1f");
+        if changed then
+            Settings.current.notifications.notificationsOffset.x = notificationsOffset.x;
+            Settings.current.notifications.notificationsOffset.y = notificationsOffset.y;
+        end
+        settingsChanged = settingsChanged or changed;
+
+        if imgui.button("Show test notification") then
+            Notifications.AddNotification("Test");
+        end
 
         imgui.tree_pop();
     end

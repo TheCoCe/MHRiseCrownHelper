@@ -24,7 +24,6 @@ end
 local function AddListener(e, f)
     if IsFunction(f) then
         e.__listeners[f] = true;
-        Utils.logInfo("Listener added" .. type(e) .. type(f));
         return true;
     else
         return false;
@@ -40,7 +39,6 @@ end
 local function RemoveListener(e, f)
     if IsFunction(f) then
         e.__listeners[f] = nil;
-        Utils.logInfo("Listener removed" .. type(e) .. type(f));
         return true;
     else
         return false;

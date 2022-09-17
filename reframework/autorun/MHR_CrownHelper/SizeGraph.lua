@@ -242,7 +242,6 @@ function SizeGraph.Update(deltaTime)
             end
         end
     end
-
 end
 
 -------------------------------------------------------------------

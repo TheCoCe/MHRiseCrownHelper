@@ -15,6 +15,8 @@ local getAspectRatio = sdk.find_type_definition("via.Camera"):get_method("get_As
 --local imguiFont;
 local d2dFont;
 
+Drawing.fontResources = {};
+
 -- image resources
 Drawing.imageResourcePath = "MHR_CrownHelper/";
 Drawing.imageResources = {};
@@ -28,7 +30,12 @@ function Drawing.Init()
         Drawing.InitImage("monster", "monster1.png");
         Drawing.InitImage("book", "Book.png");
 
+        Drawing.InitImage("nbgs", "NotificationBgS.png");
+        Drawing.InitImage("nbgf", "NotificationBgF.png");
+        Drawing.InitImage("nbge", "NotificationBgE.png");
+
         d2dFont = d2d.Font.new("Consolas", Settings.current.text.textSize, false);
+        Drawing.InitFont("notification", "Consolas", 25, true, false);
     end
 end
 
@@ -41,6 +48,20 @@ end
 function Drawing.InitImage(key, image)
     if d2d ~= nil then
         Drawing.imageResources[key] = d2d.Image.new(Drawing.imageResourcePath .. image);
+    end
+end
+
+-------------------------------------------------------------------
+
+---comment
+---@param key string
+---@param font string
+---@param size integer
+---@param bold boolean
+---@param italic boolean
+function Drawing.InitFont(key, font, size, bold, italic)
+    if d2d ~= nil then
+        Drawing.fontResources[key] = d2d.Font.new(font, size, bold, italic);
     end
 end
 
@@ -117,12 +138,58 @@ end
 
 -------------------------------------------------------------------
 
+---Draws a text at the specified location with optional text shadow
+---@param text string
+---@param font userdata
+---@param posx number
+---@param posy number
+---@param color number
+---@param drawShadow boolean|nil
+---@param shadowOffsetX number|nil
+---@param shadowOffsetY number|nil
+---@param shadowColor integer|nil
+function Drawing.DrawTextFont(text, font, posx, posy, color, drawShadow, shadowOffsetX, shadowOffsetY, shadowColor)
+    if text == nil or font == nil then
+        return;
+    end
+
+    if drawShadow then
+        if d2d ~= nil then
+            d2d.text(font, text, posx + shadowOffsetX, posy + shadowOffsetY, shadowColor);
+        else
+            draw.text(text, posx + shadowOffsetX, posy + shadowOffsetY, Drawing.ARGBtoABGR(shadowColor));
+        end
+    end
+
+    if d2d ~= nil then
+        d2d.text(font, text, posx, posy, color);
+    else
+        draw.text(text, posx, posy, Drawing.ARGBtoABGR(color));
+    end
+end
+
+-------------------------------------------------------------------
+
 ---Measures the text in the current drawing font
 ---@param text string
 ---@return number
 function Drawing.MeasureText(text)
     if d2dFont then
         return d2dFont:measure(text);
+    end
+
+    return 0;
+end
+
+-------------------------------------------------------------------
+
+---Measures the text in the current drawing font
+---@param text string
+---@param font userdata
+---@return number
+function Drawing.MeasureTextWithFont(text, font)
+    if font then
+        return font:measure(text);
     end
 
     return 0;
