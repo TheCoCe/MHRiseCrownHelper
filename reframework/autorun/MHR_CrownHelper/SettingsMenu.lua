@@ -92,6 +92,9 @@ function SettingsMenu.Draw()
     end
 
     if imgui.tree_node("Crown notifications") then
+        changed, Settings.current.notifications.showNotifications = imgui.checkbox("Show notifications", Settings.current.notifications.showNotifications);
+        settingsChanged = settingsChanged or changed;
+
         changed, Settings.current.notifications.ignoreSilverCrowns = imgui.checkbox("Ignore silver crowns", Settings.current.notifications.ignoreSilverCrowns);
         settingsChanged = settingsChanged or changed;
 

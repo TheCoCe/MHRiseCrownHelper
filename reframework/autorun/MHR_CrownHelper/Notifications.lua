@@ -13,15 +13,11 @@ local CurrentNotification = nil;
 -------------------------------------------------------------------
 
 function Notifications.Update()
-    local sw, sh = Drawing.GetWindowSize();
-
-    --[[
-    if firstUpdate then
-        Notifications.AddNotification("A very long test message to test the notification system", Drawing.imageResources["kingCrown"]);
-        Notifications.AddNotification("Very short", Drawing.imageResources["miniCrown"]);
-        firstUpdate = false;
+    if not Settings.current.notifications.showNotifications then
+        return;
     end
-    ]]
+
+    local sw, sh = Drawing.GetWindowSize();
 
     if #NotificationQueue > 0 and not CurrentNotification then
         CurrentNotification = NotificationWidget.New(NotificationQueue[1].message, NotificationQueue[1].icon);
@@ -43,7 +39,9 @@ end
 -------------------------------------------------------------------
 
 function Notifications.AddNotification(message, icon)
-    NotificationQueue[#NotificationQueue+1] = { message = message, icon = icon };
+    if Settings.current.notifications.showNotifications then
+        NotificationQueue[#NotificationQueue+1] = { message = message, icon = icon };
+    end
 end
 
 -------------------------------------------------------------------

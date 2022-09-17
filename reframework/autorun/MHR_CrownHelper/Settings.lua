@@ -40,6 +40,7 @@ function Settings.Init()
         },
 
         notifications = {
+            showNotifications = true,
             ignoreSilverCrowns = false,
             ignoreObtainedCrowns = false,
             notificionDisplayTime = 5,

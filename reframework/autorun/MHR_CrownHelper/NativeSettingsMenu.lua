@@ -157,6 +157,9 @@ function NativeSettingsMenu.DrawMenu()
 
     OptionsMenu.Header("Crown Notifications");
 
+    changed, Settings.current.notifications.showNotifications = OptionsMenu.CheckBox("Show notifications", Settings.current.notifications.showNotifications, "Show a notification for monster crowns when joining a quest or when a new monster is spotted");
+    settingsChanged = settingsChanged or changed;
+
     changed, Settings.current.notifications.ignoreSilverCrowns = OptionsMenu.CheckBox("Ignore silver crowns", Settings.current.notifications.ignoreSilverCrowns, "Do not show notifications for silver crowns");
     settingsChanged = settingsChanged or changed;
 
