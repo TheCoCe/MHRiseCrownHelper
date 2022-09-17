@@ -144,10 +144,13 @@ function NativeSettingsMenu.DrawMenu()
     if ShowSizeAdvanced then
         OptionsMenu.IncreaseIndent();
 
-        changed, Settings.current.crownIcons.hunterRecordIconOffset.x = OptionsMenu.Slider("Size Details X Offset", Settings.current.crownIcons.hunterRecordIconOffset.x, -1000, 1000);
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.x = OptionsMenu.Slider("Size Details X Offset", Settings.current.sizeDetails.sizeDetailsOffset.x, -1000, 1000);
         settingsChanged = settingsChanged or changed;
         
-        changed, Settings.current.crownIcons.hunterRecordIconOffset.y = OptionsMenu.Slider("Size Details Y Offset", Settings.current.crownIcons.hunterRecordIconOffset.y, -1000, 1000);
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.y = OptionsMenu.Slider("Size Details Y Offset", Settings.current.sizeDetails.sizeDetailsOffset.y, -1000, 1000);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing = OptionsMenu.FloatSlider("Item spacing", Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing, 0.0, 10.0);
         settingsChanged = settingsChanged or changed;
 
         OptionsMenu.DecreaseIndent();

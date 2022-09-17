@@ -246,12 +246,12 @@ end
 
 -------------------------------------------------------------------
 
-local ctPadRight = 0.01953125;      --  50
-local ctPadTop = 0.0243056;         --  35
-local ctItemWidth = 0.0449;         -- 115
-local ctPadItem = 0.006;            --  18
-local ctPadItemBotom = 0.0104167;   --  15
-local ctInfoHeight = 0.029167;      --  42
+local baseCtPadRight = 0.01953125;      --  50
+local baseCtPadTop = 0.0243056;         --  35
+local baseCtItemWidth = 0.0449;         -- 115
+local baseCtPadItem = 0.006;            --  18
+local baseCtPadItemBot = 0.0104167;   --  15
+local baseCtInfoHeight = 0.029167;      --  42
 
 ---Draws a crown on top of a monster icon in the top right.
 ---@param monster table
@@ -259,6 +259,11 @@ local ctInfoHeight = 0.029167;      --  42
 function SizeGraph.DrawMonsterCrown(monster, index)
     if (monster.isSmall or monster.isBig or monster.isKing) then
         local w, h = Drawing.GetWindowSize();
+
+        local ctPadRight = baseCtPadRight * Settings.current.crownIcons.crownIconOffset.padRight;
+        local ctPadTop = baseCtPadTop * Settings.current.crownIcons.crownIconOffset.padTop;
+        local ctItemWidth = baseCtItemWidth * Settings.current.crownIcons.crownIconOffset.widthItem;
+        local ctPadItem = baseCtPadItem * Settings.current.crownIcons.crownIconOffset.padItem;
 
         -- crown size
         local size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.crownIconSizeMultiplier;
@@ -295,7 +300,10 @@ end
 
 -------------------------------------------------------------------
 
-local detailInfoSize = 80;
+local detailInfoSizeGraph = 100;
+local detailInfoSize = 70;
+local bgMarginX = 20;
+local bgMarginY = 10;
 
 ---Draws the monster details for a specific monster
 ---@param monster table The monster table
@@ -325,15 +333,22 @@ function SizeGraph.DrawMonsterDetails(monster, index)
     end
 
     local w, h = Drawing.GetWindowSize();
-    local posx = (ctPadRight * w) + 3 * (ctItemWidth * w) + 2 * (ctPadItem * w);
-    local posy = (ctPadTop * h) + (ctItemWidth * w) + 2 * (ctPadItemBotom * h) + (ctInfoHeight * h) +
-        (detailInfoSize * index);
+    local posx = (baseCtPadRight * w) + 3 * (baseCtItemWidth * w) + 2 * (baseCtPadItem * w);
+
+    local detailsHeight = Settings.current.sizeDetails.showSizeGraph and detailInfoSizeGraph or detailInfoSize;
+
+    local posy = (baseCtPadTop * h) + (baseCtItemWidth * w) + 2 * (baseCtPadItemBot * h) + (baseCtInfoHeight * h) +
+        (detailsHeight * Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing * index);
 
     local SizeGraphWidget = SizeGraphWidgets[monster];
     
     posx, posy = Drawing.FromTopRight(posx, posy);
     posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x + SizeGraphWidget.AnimData.offset.x; --animData.offset.x;
     posy = posy + Settings.current.sizeDetails.sizeDetailsOffset.y + SizeGraphWidget.AnimData.offset.y;
+
+    local sizeGraphWidth = ((3 * baseCtItemWidth * w) + (2 * baseCtPadItem * w));
+
+    Drawing.DrawImage(Drawing.imageResources["sgbg"], posx - bgMarginX, posy - bgMarginY, sizeGraphWidth + 2 * bgMarginX, detailsHeight - bgMarginY, 0, 0);
 
     -- Draw the following:
     -- Monster name
@@ -349,7 +364,7 @@ function SizeGraph.DrawMonsterDetails(monster, index)
     if Settings.current.sizeDetails.showSizeGraph then
         local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
         if sizeInfo ~= nil then
-            SizeGraphWidget:draw(posx, posy, ((3 * ctItemWidth * w) + (2 * ctPadItem * w)), 15, 2, 
+            SizeGraphWidget:draw(posx, posy, sizeGraphWidth, 15, 2, 
                 monster.size, sizeInfo.smallBorder, sizeInfo.bigBorder, sizeInfo.kingBorder);
         end
     else

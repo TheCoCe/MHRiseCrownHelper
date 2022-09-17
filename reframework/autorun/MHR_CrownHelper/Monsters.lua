@@ -72,6 +72,8 @@ Monsters.UpdateInterval = 5.0;
 Monsters.onMonsterAdded = Event.New();
 Monsters.onMonsterRemoved = Event.New();
 
+local monsterDebugIndex = 0;
+
 -------------------------------------------------------------------
 
 function Monsters.OnGameStatusChangedCallback()
@@ -208,6 +210,19 @@ function Monsters.NewMonster(enemy)
 
     if sizeInfo ~= nil then
         local size = getMonsterListRegisterScaleMethod(enemy);
+        --[[
+        if monsterDebugIndex == 0 then
+            size = 1.234;
+        elseif monsterDebugIndex == 1 then
+            size = 1.05;
+        elseif monsterDebugIndex == 2 then
+            size = 1.2;
+        elseif monsterDebugIndex == 3 then
+            size = 0.89;
+        end
+
+        monsterDebugIndex = monsterDebugIndex + 1;
+        ]]
 
         if size ~= nil then
             monster.size = size;

@@ -60,11 +60,36 @@ function SettingsMenu.Draw()
 
         imgui.new_line();
 
+        --[[
+            changed, Settings.current.crownIcons.crownIconOffset.padRight = imgui.drag_float("Monster pad right", Settings.current.crownIcons.crownIconOffset.padRight, 0.1, 0, 10, "%.1f");
+            settingsChanged = settingsChanged or changed;
+            
+            changed, Settings.current.crownIcons.crownIconOffset.padTop = imgui.drag_float("Monster pad top", Settings.current.crownIcons.crownIconOffset.padTop, 0.1, 0, 10, "%.1f");
+            settingsChanged = settingsChanged or changed;
+            
+            changed, Settings.current.crownIcons.crownIconOffset.padItem = imgui.drag_float("Monster pad item", Settings.current.crownIcons.crownIconOffset.padItem, 0.1, 0, 10, "%.1f");
+            settingsChanged = settingsChanged or changed;
+            
+            changed, Settings.current.crownIcons.crownIconOffset.widthItem = imgui.drag_float("Monster item width", Settings.current.crownIcons.crownIconOffset.widthItem, 0.1, 0, 10, "%.1f");
+            settingsChanged = settingsChanged or changed;
+        ]]
+            
         imgui.tree_pop();
     end
 
     if imgui.tree_node("Size Details") then
         changed, Settings.current.sizeDetails.showSizeDetails = imgui.checkbox("Show size details", Settings.current.sizeDetails.showSizeDetails);
+        settingsChanged = settingsChanged or changed;
+
+        imgui.new_line();
+
+        changed, Settings.current.sizeDetails.showHunterRecordIcons = imgui.checkbox("Show hunter record icons", Settings.current.sizeDetails.showHunterRecordIcons);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Draw size graph", Settings.current.sizeDetails.showSizeGraph);
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.sizeDetails.autoHideAfter = imgui.drag_float("Auto hide seconds", Settings.current.sizeDetails.autoHideAfter, 0.1, 0, 3600, "%.1f");
         settingsChanged = settingsChanged or changed;
 
         imgui.new_line();
@@ -77,16 +102,8 @@ function SettingsMenu.Draw()
         end
         settingsChanged = settingsChanged or changed;
 
-        changed, Settings.current.sizeDetails.showHunterRecordIcons = imgui.checkbox("Show hunter record icons", Settings.current.sizeDetails.showHunterRecordIcons);
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing = imgui.drag_float("Item spacing", Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing, 0.1, 0, 20, "%.1f");
         settingsChanged = settingsChanged or changed;
-
-        changed, Settings.current.sizeDetails.showSizeGraph = imgui.checkbox("Draw size graph", Settings.current.sizeDetails.showSizeGraph);
-        settingsChanged = settingsChanged or changed;
-
-        changed, Settings.current.sizeDetails.autoHideAfter = imgui.drag_float("Auto hide seconds", Settings.current.sizeDetails.autoHideAfter, 0.1, 0, 3600, "%.1f");
-        settingsChanged = settingsChanged or changed;
-
-        imgui.new_line();
 
         imgui.tree_pop();
     end

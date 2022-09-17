@@ -34,6 +34,8 @@ function Drawing.Init()
         Drawing.InitImage("nbgf", "NotificationBgF.png");
         Drawing.InitImage("nbge", "NotificationBgE.png");
 
+        Drawing.InitImage("sgbg", "SizeGraphBg.png");
+
         d2dFont = d2d.Font.new("Consolas", Settings.current.text.textSize, false);
         Drawing.InitFont("notification", "Consolas", 25, true, false);
     end
