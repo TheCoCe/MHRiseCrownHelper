@@ -95,6 +95,9 @@ function NativeSettingsMenu.DrawMenu()
         
         changed, Settings.current.crownIcons.crownIconSizeMultiplier = OptionsMenu.FloatSlider("Crown Icon Size", Settings.current.crownIcons.crownIconSizeMultiplier, 0, 10, "Crown icon size multiplier");
         settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.crownIcons.crownIconOffset.spacing = OptionsMenu.Slider("Crown Icon Spacing", Settings.current.crownIcons.crownIconOffset.spacing, -1000, 1000, "Spacing between crown icons. Useful to better match the monster icon spacing.");
+        settingsChanged = settingsChanged or changed;
         
         changed, Settings.current.crownIcons.crownIconOffset.x = OptionsMenu.Slider("Crown Icon X Offset", Settings.current.crownIcons.crownIconOffset.x, -1000, 1000);
         settingsChanged = settingsChanged or changed;
@@ -107,6 +110,9 @@ function NativeSettingsMenu.DrawMenu()
         OptionsMenu.IncreaseIndent();
         
         changed, Settings.current.crownIcons.hunterRecordIconSizeMultiplier = OptionsMenu.FloatSlider("Record Icon Size", Settings.current.crownIcons.hunterRecordIconSizeMultiplier, 0, 10, "Record icon size multiplier");
+        settingsChanged = settingsChanged or changed;
+
+        changed, Settings.current.crownIcons.hunterRecordIconOffset.spacing = OptionsMenu.Slider("Record Icon Spacing", Settings.current.crownIcons.hunterRecordIconOffset.spacing, -1000, 1000, "Spacing between record icons. Useful to better match the monster icon spacing.");
         settingsChanged = settingsChanged or changed;
         
         changed, Settings.current.crownIcons.hunterRecordIconOffset.x = OptionsMenu.Slider("Record Icon X Offset", Settings.current.crownIcons.hunterRecordIconOffset.x, -1000, 1000);
@@ -150,7 +156,7 @@ function NativeSettingsMenu.DrawMenu()
         changed, Settings.current.sizeDetails.sizeDetailsOffset.y = OptionsMenu.Slider("Size Details Y Offset", Settings.current.sizeDetails.sizeDetailsOffset.y, -1000, 1000);
         settingsChanged = settingsChanged or changed;
 
-        changed, Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing = OptionsMenu.FloatSlider("Item spacing", Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing, 0.0, 10.0);
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.spacing = OptionsMenu.FloatSlider("Item spacing", Settings.current.sizeDetails.sizeDetailsOffset.spacing, 0.0, 10.0);
         settingsChanged = settingsChanged or changed;
 
         OptionsMenu.DecreaseIndent();

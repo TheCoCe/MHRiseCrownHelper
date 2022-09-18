@@ -20,8 +20,7 @@ CrownHelper.initialized = false;
 -- fix non d2d sizeGraph drawing
 -- add icon when the record is already registered but better than the previously registered one
 -- increase crown icon resolution
--- try different backgrounds for notifications
--- add some background to the size graph?
+-- check fonts to support korean etc.
 
 -------------------------------------------------------------------
 

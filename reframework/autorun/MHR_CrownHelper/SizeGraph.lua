@@ -1,13 +1,13 @@
 local SizeGraph = {};
 local SizeGraphWidget = {};
 
-local Animation     = require("MHR_CrownHelper.Animation");
-local Utils         = require("MHR_CrownHelper.Utils")
-local Drawing       = require("MHR_CrownHelper.Drawing")
-local Monsters      = require("MHR_CrownHelper.Monsters");
-local Settings      = require("MHR_CrownHelper.Settings");
-local Quests        = require("MHR_CrownHelper.Quests");
-local Singletons    = require("MHR_CrownHelper.Singletons")
+local Animation  = require("MHR_CrownHelper.Animation");
+local Utils      = require("MHR_CrownHelper.Utils")
+local Drawing    = require("MHR_CrownHelper.Drawing")
+local Monsters   = require("MHR_CrownHelper.Monsters");
+local Settings   = require("MHR_CrownHelper.Settings");
+local Quests     = require("MHR_CrownHelper.Quests");
+local Singletons = require("MHR_CrownHelper.Singletons")
 
 -------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ function SizeGraph.SizeGraphOpen()
     local showNextItem = function(f)
         if i <= #SizeGraphMonsterList then
             local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
-            
+
             Utils.logDebug("Animating monster widget: " .. SizeGraphMonsterList[i].name);
             if not Widget.AnimData.visible then
                 Utils.logDebug("widget:show ");
@@ -98,8 +98,8 @@ function SizeGraph.SizeGraphOpen()
 
     showNextItem(showNextItem);
 
-    if(Settings.current.sizeDetails.autoHideAfter > 0) then
-        Animation.Delay(Settings.current.sizeDetails.autoHideAfter, function ()
+    if (Settings.current.sizeDetails.autoHideAfter > 0) then
+        Animation.Delay(Settings.current.sizeDetails.autoHideAfter, function()
             SizeGraph.SizeGraphClose();
         end)
     end
@@ -111,7 +111,7 @@ end
 function SizeGraph.SizeGraphClose()
     local i = #SizeGraphMonsterList;
     sizeGraphAnimating = true;
-    
+
     local hideNextItem = function(f)
         if i >= 1 then
             local Widget = SizeGraphWidgets[SizeGraphMonsterList[i]];
@@ -127,7 +127,7 @@ function SizeGraph.SizeGraphClose()
             sizeGraphAnimating = false;
         end
     end
-    
+
     hideNextItem(hideNextItem);
 end
 
@@ -211,7 +211,7 @@ function SizeGraph.Update(deltaTime)
                 Utils.logDebug("sizeGraphVisible == false");
                 Utils.logDebug("#SizeGraphMonsterList: " .. #SizeGraphMonsterList);
                 for i = #MonstersToAdd, 1, -1 do
-                    SizeGraphMonsterList[#SizeGraphMonsterList+1] = MonstersToAdd[i];
+                    SizeGraphMonsterList[#SizeGraphMonsterList + 1] = MonstersToAdd[i];
                     Utils.logDebug("monstersToAdd remove index " .. i);
                     table.remove(MonstersToAdd, i);
                     Utils.logDebug("get monster");
@@ -224,7 +224,7 @@ function SizeGraph.Update(deltaTime)
             end
         end
     end
-    
+
     -- draw in quest infos
     if Quests.gameStatus == 2 then
         -- iterate over all monsters and call DrawMonsterCrown for each one
@@ -246,54 +246,58 @@ end
 
 -------------------------------------------------------------------
 
-local baseCtPadRight = 0.01953125;      --  50
-local baseCtPadTop = 0.0243056;         --  35
-local baseCtItemWidth = 0.0449;         -- 115
-local baseCtPadItem = 0.006;            --  18
-local baseCtPadItemBot = 0.0104167;   --  15
-local baseCtInfoHeight = 0.029167;      --  42
+local baseCtPadRight = 0.01953125; --  50
+local baseCtPadTop = 0.0243056; --  35
+local baseCtItemWidth = 0.0449; -- 115
+local baseCtPadItem = 0.006; --  18
+local baseCtPadItemBot = 0.0104167; --  15
+local baseCtInfoHeight = 0.029167; --  42
 
 ---Draws a crown on top of a monster icon in the top right.
 ---@param monster table
 ---@param index number
 function SizeGraph.DrawMonsterCrown(monster, index)
+    -- Placing the crown and book icons
+    --                     Spacing  RightOffset
+    --                     ┌──┴───┐┌─────┴─────┐
+    --          ┌   ───────────────────────────┐┐
+    -- ctPadTop ┤                              ││
+    --          └  ┌────┐  ┌────┐  ┌────┐      │├ TopOffset
+    --             │♕🕮│  │♕🕮│  │♕🕮│      ││
+    --             └────┘  └────┘  └────┘      │┘
+    --                  └┰─┘                   ╵
+    --                ctPadItem    └─┰──┘└──┰──┘
+    --                         ctItemWidth ctPadRight
+    
     if (monster.isSmall or monster.isBig or monster.isKing) then
         local w, h = Drawing.GetWindowSize();
-
-        local ctPadRight = baseCtPadRight * Settings.current.crownIcons.crownIconOffset.padRight;
-        local ctPadTop = baseCtPadTop * Settings.current.crownIcons.crownIconOffset.padTop;
-        local ctItemWidth = baseCtItemWidth * Settings.current.crownIcons.crownIconOffset.widthItem;
-        local ctPadItem = baseCtPadItem * Settings.current.crownIcons.crownIconOffset.padItem;
-
-        -- crown size
-        local size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.crownIconSizeMultiplier;
-
-        -- place crowns on icon
-        local posx = (ctPadRight * w) + (index + 1) * (ctItemWidth * w) + index * (ctPadItem * w);
-        local posy = (ctPadTop * h) + (ctItemWidth * w) - (size * 1.1);
-
-        -- transform position
-        posx, posy = Drawing.FromTopRight(posx, posy);
-
-        posx = posx + Settings.current.crownIcons.crownIconOffset.x;
-        posy = posy + Settings.current.crownIcons.crownIconOffset.y;
-
+        local RightOffset = baseCtPadRight * w + baseCtItemWidth * w;
+        local Spacing = baseCtItemWidth * w + baseCtPadItem * w;
+        local TopOffset = baseCtPadTop * h + baseCtItemWidth * w + Settings.current.crownIcons.offset.top;
+        local size = baseCtItemWidth * w * 0.5;
+    
         local image = monster.isKing and "kingCrown" or (monster.isBig and "bigCrown" or "miniCrown");
-        Drawing.DrawImage(Drawing.imageResources[image], posx, posy, size, size);
+        
+        local x, y = Drawing.FromTopRight(RightOffset + index * (Spacing + Settings.current.crownIcons.crownIconOffset.spacing), TopOffset);
+        x = x + Settings.current.crownIcons.crownIconOffset.x;
+        y = y + Settings.current.crownIcons.crownIconOffset.y;
+
+        local crownSize = size * Settings.current.crownIcons.crownIconSizeMultiplier;
+
+        Drawing.DrawImage(Drawing.imageResources[image], x, y, crownSize, crownSize, 0, 1);
 
         local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
         -- draw book icon
         if (sizeInfo and sizeInfo.crownNeeded) and Settings.current.crownIcons.showHunterRecordIcons then
-            size = (ctItemWidth * w) * 0.5 * Settings.current.crownIcons.hunterRecordIconSizeMultiplier;
-            posx = (ctPadRight * w) + (index) * (ctItemWidth * w) + index * (ctPadItem * w) + (size * 1.1);
-            posy = (ctPadTop * h) + (ctItemWidth * w) - (size * 1.1);
-            -- transform position
-            posx, posy = Drawing.FromTopRight(posx, posy);
+            local bRightOffset = baseCtPadRight * w;
 
-            posx = posx + Settings.current.crownIcons.hunterRecordIconOffset.x;
-            posy = posy + Settings.current.crownIcons.hunterRecordIconOffset.y;
+            x, y = Drawing.FromTopRight(bRightOffset + index * (Spacing + Settings.current.crownIcons.hunterRecordIconOffset.spacing), TopOffset);
+            x = x + Settings.current.crownIcons.hunterRecordIconOffset.x;
+            y = y + Settings.current.crownIcons.hunterRecordIconOffset.y;
 
-            Drawing.DrawImage(Drawing.imageResources["book"], posx, posy, size, size);
+            local bookSize = size * Settings.current.crownIcons.hunterRecordIconSizeMultiplier;
+
+            Drawing.DrawImage(Drawing.imageResources["book"], x, y, bookSize, bookSize, 1, 1);
         end
     end
 end
@@ -338,33 +342,34 @@ function SizeGraph.DrawMonsterDetails(monster, index)
     local detailsHeight = Settings.current.sizeDetails.showSizeGraph and detailInfoSizeGraph or detailInfoSize;
 
     local posy = (baseCtPadTop * h) + (baseCtItemWidth * w) + 2 * (baseCtPadItemBot * h) + (baseCtInfoHeight * h) +
-        (detailsHeight * Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing * index);
+        (detailsHeight * index) + (Settings.current.sizeDetails.sizeDetailsOffset.spacing * index);
 
     local SizeGraphWidget = SizeGraphWidgets[monster];
-    
+
     posx, posy = Drawing.FromTopRight(posx, posy);
-    posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x + SizeGraphWidget.AnimData.offset.x; --animData.offset.x;
+    posx = posx + Settings.current.sizeDetails.sizeDetailsOffset.x + SizeGraphWidget.AnimData.offset.x;
     posy = posy + Settings.current.sizeDetails.sizeDetailsOffset.y + SizeGraphWidget.AnimData.offset.y;
 
     local sizeGraphWidth = ((3 * baseCtItemWidth * w) + (2 * baseCtPadItem * w));
 
-    Drawing.DrawImage(Drawing.imageResources["sgbg"], posx - bgMarginX, posy - bgMarginY, sizeGraphWidth + 2 * bgMarginX, detailsHeight - bgMarginY, 0, 0);
+    Drawing.DrawImage(Drawing.imageResources["sgbg"], posx - bgMarginX, posy - bgMarginY, sizeGraphWidth + 2 * bgMarginX
+        , detailsHeight - bgMarginY, 0, 0);
 
     -- Draw the following:
     -- Monster name
     --                    114
     -- 90 ├────────────┼──♛───┤ 123
-    
+
     Drawing.DrawText(headerString, posx, posy, SizeGraphWidget.AnimData.textColor, true, 1.5, 1.5,
         SizeGraphWidget.AnimData.textShadowColor);
-        
+
     local _, height = Drawing.MeasureText(headerString);
 
     posy = posy + height * 1.5;
     if Settings.current.sizeDetails.showSizeGraph then
         local sizeInfo = Monsters.GetSizeInfoForEnemyType(monster.emType, false);
         if sizeInfo ~= nil then
-            SizeGraphWidget:draw(posx, posy, sizeGraphWidth, 15, 2, 
+            SizeGraphWidget:draw(posx, posy, sizeGraphWidth, 15, 2,
                 monster.size, sizeInfo.smallBorder, sizeInfo.bigBorder, sizeInfo.kingBorder);
         end
     else
@@ -386,7 +391,7 @@ function SizeGraphWidget.ShowAnim(s, showTime, callback)
     s.AnimData.visible = true;
     showTime = showTime or 0.25;
 
-    Animation.AnimLerp(0, 1, showTime, function (v)
+    Animation.AnimLerp(0, 1, showTime, function(v)
         local col1 = Animation.LerpColor(0x00FFFFFF, 0xFFFFFFFF, v);
         local col2 = Animation.LerpColor(0x003f3f3f, 0xFF3f3f3f, v);
         s.AnimData.textColor = col1;
@@ -395,11 +400,11 @@ function SizeGraphWidget.ShowAnim(s, showTime, callback)
         s.AnimData.iconSize = 32 * v;
     end)
 
-    Animation.AnimLerpV2(500, 0, 0, 0, showTime, function (x, y)
+    Animation.AnimLerpV2(500, 0, 0, 0, showTime, function(x, y)
         s.AnimData.offset.x = x;
         s.AnimData.offset.y = y;
     end, "easeInQuad");
-    
+
     Animation.Delay(showTime, callback);
 end
 
@@ -412,7 +417,7 @@ end
 function SizeGraphWidget.HideAnim(s, hideTime, callback)
     hideTime = hideTime or 0.25;
 
-    Animation.AnimLerp(0, 1, hideTime, function (v)
+    Animation.AnimLerp(0, 1, hideTime, function(v)
         local col1 = Animation.LerpColor(0xFFFFFFFF, 0x00FFFFFF, v);
         local col2 = Animation.LerpColor(0xFF3f3f3f, 0x003f3f3f, v);
         s.AnimData.textColor = col1;
@@ -420,13 +425,13 @@ function SizeGraphWidget.HideAnim(s, hideTime, callback)
         s.AnimData.graphColor = col1;
         s.AnimData.iconSize = 32 * (1 - v);
     end)
-    
-    Animation.AnimLerpV2(0, 0, 500, 0, hideTime, function (x, y)
+
+    Animation.AnimLerpV2(0, 0, 500, 0, hideTime, function(x, y)
         s.AnimData.offset.x = x;
         s.AnimData.offset.y = y;
     end, "easeOutQuad");
-    
-    Animation.Delay(hideTime, function ()
+
+    Animation.Delay(hideTime, function()
         s.AnimData.visible = false;
         callback();
     end);
@@ -458,7 +463,8 @@ function SizeGraphWidget.Draw(s, posx, posy, sizex, sizey, lineWidth, monsterSiz
     local scaledSizex = sizex - (minWidth * textPadMult + maxWidth * textPadMult);
 
     -- Draw:        100
-    Drawing.DrawText(sizeString, posx + minWidth * textPadMult + scaledSizex * normalizedSize - 0.5 * sizeWidth, posy, s.AnimData.textColor);
+    Drawing.DrawText(sizeString, posx + minWidth * textPadMult + scaledSizex * normalizedSize - 0.5 * sizeWidth, posy,
+        s.AnimData.textColor);
     -- Draw: 90
     Drawing.DrawText(minString, posx, posy + heightPadMult * sizeHeight, s.AnimData.textColor);
     -- Draw: 90            123
@@ -470,9 +476,11 @@ function SizeGraphWidget.Draw(s, posx, posy, sizex, sizey, lineWidth, monsterSiz
     -- Draw: 90 |---------- 123
     Drawing.DrawRect(posx + minWidth * textPadMult, lineHeight, lineWidth, sizey, s.AnimData.graphColor, 0.5, 0.5);
     -- Draw: 90 |---------| 123
-    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex, lineHeight, lineWidth, sizey, s.AnimData.graphColor, 0.5, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex, lineHeight, lineWidth, sizey, s.AnimData.graphColor,
+        0.5, 0.5);
     -- Draw: 90 |------|--| 123
-    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex * normalizedBigSize, lineHeight, lineWidth, sizey, s.AnimData.graphColor, 0.5, 0.5);
+    Drawing.DrawRect(posx + minWidth * textPadMult + scaledSizex * normalizedBigSize, lineHeight, lineWidth, sizey,
+        s.AnimData.graphColor, 0.5, 0.5);
 
     -- draw crown image
     if d2d ~= nil then
@@ -490,9 +498,11 @@ function SizeGraphWidget.Draw(s, posx, posy, sizex, sizey, lineWidth, monsterSiz
             image = Drawing.imageResources["monster"];
         end
 
-        Drawing.DrawImage(image, posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, s.AnimData.iconSize, s.AnimData.iconSize, 0.5, 0.7);
+        Drawing.DrawImage(image, posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight,
+            s.AnimData.iconSize, s.AnimData.iconSize, 0.5, 0.7);
     else
-        draw.filled_circle(posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight, s.AnimData.iconSize * 0.5, s.AnimData.graphColor, 16);
+        draw.filled_circle(posx + minWidth * textPadMult + scaledSizex * normalizedSize, lineHeight,
+            s.AnimData.iconSize * 0.5, s.AnimData.graphColor, 16);
     end
 end
 

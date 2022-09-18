@@ -34,6 +34,9 @@ function SettingsMenu.Draw()
         changed, Settings.current.crownIcons.crownIconSizeMultiplier = imgui.drag_float("Crown Icon Size", Settings.current.crownIcons.crownIconSizeMultiplier, 0.1, 0, 10, "%.1f");
         settingsChanged = settingsChanged or changed;
 
+        changed, Settings.current.crownIcons.crownIconOffset.spacing = imgui.drag_float("Crown Icon Spacing", Settings.current.crownIcons.crownIconOffset.spacing, 0.1, 0, 0, "%.1f");
+        settingsChanged = settingsChanged or changed;
+
         local CrownIconOffset = Vector2f.new(Settings.current.crownIcons.crownIconOffset.x, Settings.current.crownIcons.crownIconOffset.y);
         changed, CrownIconOffset = imgui.drag_float2("Crown Icon Offset", CrownIconOffset, 1, 0, 0, "%.1f");
         if changed then
@@ -50,6 +53,9 @@ function SettingsMenu.Draw()
         changed, Settings.current.crownIcons.hunterRecordIconSizeMultiplier = imgui.drag_float("Hunter Record Icon Size", Settings.current.crownIcons.hunterRecordIconSizeMultiplier, 0.1, 0, 10, "%.1f");
         settingsChanged = settingsChanged or changed;
 
+        changed, Settings.current.crownIcons.hunterRecordIconOffset.spacing = imgui.drag_float("Book Icon Spacing", Settings.current.crownIcons.hunterRecordIconOffset.spacing, 0.1, 0, 0, "%.1f");
+        settingsChanged = settingsChanged or changed;
+
         local HunterRecordIconOffset = Vector2f.new(Settings.current.crownIcons.hunterRecordIconOffset.x, Settings.current.crownIcons.hunterRecordIconOffset.y);
         changed, HunterRecordIconOffset = imgui.drag_float2("Hunter Record Icon Offset", HunterRecordIconOffset, 1, 0, 0, "%.1f");
         if changed then
@@ -59,21 +65,6 @@ function SettingsMenu.Draw()
         settingsChanged = settingsChanged or changed;
 
         imgui.new_line();
-
-        --[[
-            changed, Settings.current.crownIcons.crownIconOffset.padRight = imgui.drag_float("Monster pad right", Settings.current.crownIcons.crownIconOffset.padRight, 0.1, 0, 10, "%.1f");
-            settingsChanged = settingsChanged or changed;
-            
-            changed, Settings.current.crownIcons.crownIconOffset.padTop = imgui.drag_float("Monster pad top", Settings.current.crownIcons.crownIconOffset.padTop, 0.1, 0, 10, "%.1f");
-            settingsChanged = settingsChanged or changed;
-            
-            changed, Settings.current.crownIcons.crownIconOffset.padItem = imgui.drag_float("Monster pad item", Settings.current.crownIcons.crownIconOffset.padItem, 0.1, 0, 10, "%.1f");
-            settingsChanged = settingsChanged or changed;
-            
-            changed, Settings.current.crownIcons.crownIconOffset.widthItem = imgui.drag_float("Monster item width", Settings.current.crownIcons.crownIconOffset.widthItem, 0.1, 0, 10, "%.1f");
-            settingsChanged = settingsChanged or changed;
-        ]]
-            
         imgui.tree_pop();
     end
 
@@ -102,7 +93,7 @@ function SettingsMenu.Draw()
         end
         settingsChanged = settingsChanged or changed;
 
-        changed, Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing = imgui.drag_float("Item spacing", Settings.current.sizeDetails.sizeDetailsOffset.itemSpacing, 0.1, 0, 20, "%.1f");
+        changed, Settings.current.sizeDetails.sizeDetailsOffset.spacing = imgui.drag_float("Size Details Spacing", Settings.current.sizeDetails.sizeDetailsOffset.spacing, 0.1, 0, 0, "%.1f");
         settingsChanged = settingsChanged or changed;
 
         imgui.tree_pop();

@@ -220,9 +220,9 @@ function Monsters.NewMonster(enemy)
         elseif monsterDebugIndex == 3 then
             size = 0.89;
         end
+        ]]
 
         monsterDebugIndex = monsterDebugIndex + 1;
-        ]]
 
         if size ~= nil then
             monster.size = size;

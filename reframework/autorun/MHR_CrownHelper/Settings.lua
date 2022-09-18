@@ -18,16 +18,14 @@ function Settings.Init()
             crownIconOffset = {
                 x = 0,
                 y = 0,
-                padRight = 1.0,
-                padTop = 1.0,
-                padItem = 1.0,
-                widthItem = 1.0,
+                spacing = 0,
             },
 
             hunterRecordIconSizeMultiplier = 1,
             hunterRecordIconOffset = {
                 x = 0,
-                y = 0
+                y = 0,
+                spacing = 0,
             }
         },
 
@@ -40,7 +38,7 @@ function Settings.Init()
             sizeDetailsOffset = {
                 x = 0,
                 y = 0,
-                itemSpacing = 1,
+                spacing = 0,
             }
         },
 
