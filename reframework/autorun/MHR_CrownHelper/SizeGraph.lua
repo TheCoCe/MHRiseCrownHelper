@@ -273,7 +273,7 @@ function SizeGraph.DrawMonsterCrown(monster, index)
         local w, h = Drawing.GetWindowSize();
         local RightOffset = baseCtPadRight * w + baseCtItemWidth * w;
         local Spacing = baseCtItemWidth * w + baseCtPadItem * w;
-        local TopOffset = baseCtPadTop * h + baseCtItemWidth * w + Settings.current.crownIcons.offset.top;
+        local TopOffset = baseCtPadTop * h + baseCtItemWidth * w;
         local size = baseCtItemWidth * w * 0.5;
     
         local image = monster.isKing and "kingCrown" or (monster.isBig and "bigCrown" or "miniCrown");

@@ -2,7 +2,7 @@ local Utils = {};
 
 local nameString = "[MHRCrownHelper]: ";
 
-Utils.debugMode = true;
+Utils.debugMode = false;
 
 --[[ Logging ]]--
 -------------------------------------------------------------------
